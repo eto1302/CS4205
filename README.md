@@ -6,7 +6,7 @@ Voronoi-based image reconstruction problem.
 
 ## Team
 - Cala
-- Leo (Leonardo Sigolo)
+- Leo 
 - Martin
 - Agatha
 - Ivan
@@ -37,8 +37,4 @@ Voronoi-based image reconstruction problem.
 - [Presentation rubric](./docs/presentation-rubric.pdf)
 - [Bosman 2009 — AMaLGaM / EDA paper](./docs/bosman-2009-amalgam-eda.pdf)
 
-## Open TODOs (from meeting 1)
-- [ ] **Cala** — email Arthur: (1) can we switch to Python? (2) confirm Wed 14:00 meeting
-- [ ] **Leo** — upload documents
-- [x] **Martin** — create GitHub repo
-- [ ] **All** — split roles after first supervisor meeting
+
