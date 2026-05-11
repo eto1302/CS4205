@@ -1,0 +1,20 @@
+#!/bin/sh
+
+/usr/bin/clear
+echo "Current directory:" `pwd`
+echo "Current host     :" `hostname`
+echo ""
+
+if [ -f AMaLGaM-Full ]
+then
+  rm AMaLGaM-Full
+fi
+
+echo -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+g++ -Wall -O3 -o AMaLGaM-Full AMaLGaM-Full.c
+echo -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+if [ -f AMaLGaM-Full.exe ]
+then
+  mv AMaLGaM-Full.exe AMaLGaM-Full
+fi
