@@ -1,4 +1,4 @@
 """The evopy evolutionary strategy algorithm package."""
-from evopy.evopy import EvoPy
-from evopy.strategy import Strategy
-from evopy.progress_report import ProgressReport
+from ES.evopy.evopy import EvoPy
+from ES.evopy.strategy import Strategy
+from ES.evopy.progress_report import ProgressReport

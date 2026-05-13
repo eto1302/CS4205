@@ -3,10 +3,10 @@ import time
 
 import numpy as np
 
-from evopy.individual import Individual
-from evopy.progress_report import ProgressReport
-from evopy.strategy import Strategy
-from evopy.utils import random_with_seed
+from ES.evopy.individual import Individual
+from ES.evopy.progress_report import ProgressReport
+from ES.evopy.strategy import Strategy
+from ES.evopy.utils import random_with_seed
 
 
 class EvoPy:

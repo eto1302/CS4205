@@ -1,8 +1,8 @@
 """Module containing the individuals of the evolutionary strategy algorithm."""
 import numpy as np
 
-from evopy.strategy import Strategy
-from evopy.utils import random_with_seed
+from ES.evopy.strategy import Strategy
+from ES.evopy.utils import random_with_seed
 
 
 class Individual:
