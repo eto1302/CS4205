@@ -19,19 +19,19 @@
 
 ### Main decisions
 - Choose between a Evolutionary Strategy Python or Enhanced Gaussian EDA C algorithm.
-- Deadline for this decision: Sunday 24 May.
+- Deadline for this decision: Sunday 17 May.
 
 ### Immediate tasks
-- Get the code up and running.
-- Deadline: Wednesday 20 May.
-- Finish the goals of Week 1 by Sunday 24 May.
+- [ ] Add TA to Github repo
+- [ ] Decide between Python or C baseline EA - by Sunday 17 May.
+- [ ] Get the code up and running - by Wednesday 20 May
+- By Sunday 24th May
+- [ ] Implement the fitness function
+- [ ] Benchmark the standard EA
+- [ ] Produce graphs or tables
+- [ ] Define hypotheses for improvements
+- [ ] Ask TA for a follow up meeting
 
-### Week 1 goals
-- Implement the fitness function.
-- Benchmark the standard EA.
-- Produce graphs or tables with results.
-- Define hypotheses about the improvements we want to implement.
-- Schedule a meeting with the TA if needed.
 
 ## Assignment goal
 
