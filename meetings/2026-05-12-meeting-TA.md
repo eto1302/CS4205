@@ -45,6 +45,7 @@ Choose one baseline EA to improve.
 - AMaLGaM provided by the course in C.
 
 ### Option 2
+- Use the provided code from the TA: Evolutionary Strategies, can be found on the folder Algorithms (ES)
 - Use other starting code from the web for a different real-valued evolutionary algorithm, such as:
   - Differential Evolution
   - Particle Swarm Optimization
