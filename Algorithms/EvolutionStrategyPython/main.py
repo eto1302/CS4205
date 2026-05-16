@@ -2,8 +2,8 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 
 import math
-from Algorithms.EvolutionStrategyPython.ES.evopy import EvoPy
-from Algorithms.EvolutionStrategyPython.ES.evopy import ProgressReport
+from ES.evopy import EvoPy
+from ES.evopy import ProgressReport
 from sklearn.metrics.pairwise import euclidean_distances
 import matplotlib.pyplot as plt
 import numpy as np
