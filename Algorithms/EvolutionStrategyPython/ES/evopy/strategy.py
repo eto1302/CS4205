@@ -8,7 +8,7 @@ class Strategy(Enum):
     These strategies are used to determine the mechanism which each individual can use to control
     its own mutability. The three strategies which are included are:
 
-    - SINGLE_VARIANCE: the same variance is used for each allele, no covariances
+    - SINGLE_VARIANCE: the same variance is used for each allele, no covariancesprogr
     - MULTIPLE_VARIANCE: each allele has its own variance, no covariances
     - FULL VARIANCE: each allele has its own variance, complete variances
                      (encoded as rotation angles)
