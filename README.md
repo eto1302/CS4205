@@ -1,8 +1,18 @@
-# CS4205 Assignment 2 — Image Reconstruction with EAs
+# CS4205 Assignment 2 — Circles in a Square
 
 Group project for TU Delft CS4205 Evolutionary Algorithms (Q4 2025-26).
-Implementing & extending an existing EA (AMaLGaM baseline) for the
-Voronoi-based image reconstruction problem.
+Topic: **Single-Objective Real-Valued Optimization** — improving a baseline
+EA for the *Packing n Circles in a Square* (CiaS) problem. Fitness:
+maximize the minimum pairwise distance between point coordinates in the
+unit square.
+
+Baseline options:
+- **AMaLGaM-Full** (C) — provided and supported by the course
+- **Evolution Strategy** (Python, `evopy`) — provided by the TA, at our own discretion
+
+**Constraint:** the improvement we propose must *not* be one already tried in
+Bosman & Gallagher (2018), the published case study on AMaLGaM/CMA-ES for
+CiaS — see `docs/BosmanGallager Paper.pdf`.
 
 ## Team
 - Cala
@@ -11,7 +21,8 @@ Voronoi-based image reconstruction problem.
 - Agatha
 - Ivan
 
-**Supervisor:** Arthur Guijt
+**Topic supervisor (per brief):** Peter Bosman
+**Day-to-day TA / contact:** Arthur Guijt
 
 ## Key dates
 | Date              | Milestone                              |
@@ -33,8 +44,13 @@ Voronoi-based image reconstruction problem.
 **Grading:** Content 60% · Presentation 20% · Defense 20%
 
 ## Documents
-- [Assignment brief](./docs/assignment-brief.pdf)
+- [Assignment brief](./docs/assignment-brief.pdf) — CiaS section is pp. 10–11
 - [Presentation rubric](./docs/presentation-rubric.pdf)
-- [Bosman 2009 — AMaLGaM / EDA paper](./docs/bosman-2009-amalgam-eda.pdf)
+- [Bosman & Gallagher 2018 — case study on AMaLGaM/CMA-ES for CiaS](./docs/BosmanGallager%20Paper.pdf) — central paper; defines the off-limits improvements
+- [Bosman 2009 — AMaLGaM / EDA paper](./docs/bosman-2009-amalgam-eda.pdf) — original AMaLGaM algorithm
+
+## Algorithm baselines
+- [`Algorithms/AMaLGaM-Full/`](./Algorithms/AMaLGaM-Full/) — C, Bosman's EDA with full covariance matrix
+- [`Algorithms/EvolutionStrategyPython/`](./Algorithms/EvolutionStrategyPython/) — Python `evopy` (μ, λ)-ES with self-adaptive σ
 
 

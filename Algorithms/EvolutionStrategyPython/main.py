@@ -141,5 +141,5 @@ class CirclesInASquare:
 
 if __name__ == "__main__":
     circles = 10
-    runner = CirclesInASquare(circles, plot_sols=True)
+    runner = CirclesInASquare(circles, plot_sols=False)
     best = runner.run_evolution_strategies()
