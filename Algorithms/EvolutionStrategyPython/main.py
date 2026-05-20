@@ -7,6 +7,7 @@ from ES.evopy import ProgressReport
 from sklearn.metrics.pairwise import euclidean_distances
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.patches import Circle
 
 ###########################################################
 #                                                         #
@@ -85,9 +86,17 @@ class CirclesInASquare:
         if self.plot_best_sol:
             points = np.reshape(report.best_genotype, (-1, 2))
             self.ax.clear()
-            self.ax.scatter(points[:, 0], points[:, 1], clip_on=False, color="black")
+            # report.best_fitness is the minimal pairwise centre distance (fitness)
+            # circle radius must be at most half that distance to avoid overlaps
+            max_radius = float(report.best_fitness) / 2.0
+            for (x, y) in points:
+                # also ensure circle stays inside the unit square
+                r = min(max_radius, x, y, 1.0 - x, 1.0 - y)
+                circ = Circle((x, y), r, edgecolor="black", facecolor="none")
+                self.ax.add_patch(circ)
             self.ax.set_xlim((0, 1))
             self.ax.set_ylim((0, 1))
+            self.ax.set_aspect('equal', adjustable='box')
             self.ax.set_title("Best solution in generation {:d}".format(report.generation))
             self.fig.canvas.draw()
             self.fig.canvas.flush_events()
