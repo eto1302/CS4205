@@ -8,7 +8,7 @@
 - A useful benchmark problem is placing circles in a square.
 - Contact the TA by email in case of issues.
 - The code was not yet up and running.
-- We still need to decide whether to use Python or C, and which algorithm we will optimize.
+~~ We still need to decide whether to use Python or C, and which algorithm we will optimize ~~ 
 - Using the C algorithm gives us an existing skeleton and a paper written by Peter for this assignment.
 - Writing the algorithm in Python means the whole group will understand the code.
 - The TA provided an evolutionary strategy–based algorithm that we can optimize for the assignment.
@@ -23,7 +23,7 @@
 
 ### Immediate tasks
 - [ ] Add TA to Github repo
-- [ ] Decide between Python or C baseline EA - by Sunday 17 May.
+- [x] Decide between Python or C baseline EA - by Sunday 17 May.
 - [ ] Get the code up and running - by Wednesday 20 May
 - By Sunday 24th May
 - [ ] Implement the fitness function
