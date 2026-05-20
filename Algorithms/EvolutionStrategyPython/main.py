@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use('Qt5Agg')
+matplotlib.use('TkAgg')
 
 import math
 from ES.evopy import EvoPy
