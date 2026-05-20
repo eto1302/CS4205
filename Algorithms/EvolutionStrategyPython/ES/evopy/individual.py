@@ -17,7 +17,7 @@ class Individual:
         Algorithms in Engineering and Computer Science, John Wiley & Sons.
     """
     _BETA = 0.0873
-    _EPSILON = 0.01
+    _EPSILON = 1e-7
 
     def __init__(self, genotype, strategy, strategy_parameters, bounds=None, random_seed=None):
         """Initialize the Individual.
