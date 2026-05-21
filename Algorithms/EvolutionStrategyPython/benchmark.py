@@ -5,12 +5,14 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics.pairwise import euclidean_distances
+from scipy.spatial.distance import pdist
 
 from ES.evopy import EvoPy, Strategy
 
+np.seterr(all='raise')  # Turn warnings into exceptions with a traceback
+
 # ── Configuration ──────────────────────────────────────────────────────────────
-CIRCLE_SIZES = [2, 3, 5, 7, 10, 15, 20]
+CIRCLE_SIZES = [7, 10, 15, 20]
 STRATEGIES   = [Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE, Strategy.FULL_VARIANCE]
 N_RUNS       = 25
 MAX_EVALS    = 100_000
@@ -47,23 +49,10 @@ def get_target(n_circles):
     return _TARGETS[n_circles - 2]
 
 
+
 def circles_in_a_square(individual):
-    n = len(individual)
-    distances = []
-    for i in range(0, n - 1, 2):
-        for j in range(i + 2, n, 2):
-            distances.append(math.sqrt(
-                (individual[i] - individual[j]) ** 2 +
-                (individual[i + 1] - individual[j + 1]) ** 2
-            ))
-    return min(distances)
-
-
-def circles_in_a_square_scipy(individual):
     points = np.reshape(individual, (-1, 2))
-    dist = euclidean_distances(points)
-    np.fill_diagonal(dist, 1e10)
-    return np.min(dist)
+    return pdist(points).min()
 
 
 def run_single(args):
@@ -80,7 +69,7 @@ def run_single(args):
             'std_fitness':  report.std_fitness,
         })
 
-    fitness_fn = circles_in_a_square if n_circles < 12 else circles_in_a_square_scipy
+    fitness_fn = circles_in_a_square
 
     EvoPy(
         fitness_function=fitness_fn,
@@ -99,15 +88,13 @@ def run_single(args):
     ).run()
 
     df = pd.DataFrame(records)
-    df['run_id']    = seed
+    df['seed']    = seed
     df['n_circles'] = n_circles
     df['strategy']  = strategy.name
-    df['seed']      = seed
     return df
 
 
 def compute_summary(run_dfs, target, n_circles, strategy_name):
-    """Compute ERT, success rate, and fitness statistics across multiple runs."""
     final_rows    = [df.iloc[-1] for df in run_dfs]
     final_fitness = np.array([r['best_fitness'] for r in final_rows])
     final_evals   = np.array([r['evaluations']  for r in final_rows])
@@ -116,18 +103,55 @@ def compute_summary(run_dfs, target, n_circles, strategy_name):
     n_success    = int(successes.sum())
     success_rate = n_success / len(run_dfs)
 
-    # ERT = total evaluations across all runs / successful runs (BBOB definition)
     ert = float(final_evals.sum()) / n_success if n_success > 0 else float('inf')
 
+    fitness_gap = np.abs(final_fitness - target)
+
+    hitting_evals = []
+    for df, success in zip(run_dfs, successes):
+        if success:
+            hit = df[np.abs(df['best_fitness'] - target) < TARGET_TOL]
+            if not hit.empty:
+                hitting_evals.append(hit.iloc[0]['evaluations'])
+    hitting_evals = np.array(hitting_evals) if hitting_evals else np.array([np.inf])
+
+    convergence_evals_90 = []
+    threshold_90 = 0.9 * target
+    for df in run_dfs:
+        reached = df[df['best_fitness'] >= threshold_90]
+        convergence_evals_90.append(reached.iloc[0]['evaluations'] if not reached.empty else np.inf)
+
     return {
-        'n_circles':            n_circles,
-        'strategy':             strategy_name,
-        'success_rate':         round(success_rate, 4),
-        'ert':                  ert,
-        'median_final_fitness': float(np.median(final_fitness)),
-        'mean_final_fitness':   float(np.mean(final_fitness)),
-        'std_final_fitness':    float(np.std(final_fitness)),
-        'median_evals':         float(np.median(final_evals)),
+        'n_circles':              n_circles,
+        'strategy':               strategy_name,
+        # Success
+        'success_rate':           round(success_rate, 4),
+        'n_success':              n_success,
+        # ERT (BBOB standard)
+        'ert':                    ert,
+        'ert_normalised':         ert / MAX_EVALS,
+        # First-hitting time (successful runs only)
+        'fht_median':             float(np.median(hitting_evals))   if n_success > 0 else float('nan'),
+        'fht_mean':               float(np.mean(hitting_evals))     if n_success > 0 else float('nan'),
+        'fht_std':                float(np.std(hitting_evals))      if n_success > 1 else float('nan'),
+        'fht_min':                float(np.min(hitting_evals))      if n_success > 0 else float('nan'),
+        # Final fitness
+        'median_final_fitness':   float(np.median(final_fitness)),
+        'mean_final_fitness':     float(np.mean(final_fitness)),
+        'std_final_fitness':      float(np.std(final_fitness)),
+        'best_final_fitness':     float(np.max(final_fitness)),
+        'worst_final_fitness':    float(np.min(final_fitness)),
+        # Fitness gap to optimum
+        'median_gap':             float(np.median(fitness_gap)),
+        'mean_gap':               float(np.mean(fitness_gap)),
+        'best_gap':               float(np.min(fitness_gap)),
+        # Evaluations used
+        'median_evals':           float(np.median(final_evals)),
+        'mean_evals':             float(np.mean(final_evals)),
+        # Convergence speed
+        'median_evals_to_90pct':  float(np.median(convergence_evals_90)),
+        # Budget exhaustion: how many runs hit the eval cap
+        'budget_exhausted_count': int(np.sum(final_evals >= MAX_EVALS)),
     }
 
 
