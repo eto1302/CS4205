@@ -7,6 +7,7 @@ from ES.evopy import ProgressReport
 from sklearn.metrics.pairwise import euclidean_distances
 import matplotlib.pyplot as plt
 import numpy as np
+from ES.evopy.strategy import Strategy
 from matplotlib.patches import Circle
 
 ###########################################################
@@ -138,6 +139,7 @@ class CirclesInASquare:
             bounds=(0, 1),
             target_fitness_value=self.get_target(),
             max_evaluations=1e5,
+            strategy=Strategy.FULL_VARIANCE
         )
 
         best_solution = evopy.run()

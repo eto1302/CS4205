@@ -15,8 +15,10 @@ Usage:
 import argparse
 import csv
 import math
+import os
 import sys
 import time
+from datetime import datetime
 from dataclasses import dataclass, field, asdict
 from statistics import mean, stdev
 from typing import Optional
@@ -509,19 +511,30 @@ def main():
     # ── Configure your run here ──────────────────────
     QUICK        = True
     SAVE_CSV     = True
-    CSV_PATH     = "benchmark_results_cala.csv"
     N_RUNS       = 10
-    MAX_EVALS    = 100_000
+    MAX_EVALS    = 50_000
     # ─────────────────────────────────────────────────
+
+    run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_dir = os.path.join("benchmark_Cala_results", f"benchmark_{MAX_EVALS}evals_{run_timestamp}")
+    os.makedirs(run_dir, exist_ok=True)
+
+    CSV_PATH  = os.path.join(run_dir, "benchmark_results_cala.csv")
+    PLOT_PATH = os.path.join(run_dir, "benchmark")
 
     if QUICK:
         bench = Benchmark(
             n_circles_list=[5, 8],
-            strategies=[Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE, Strategy.FULL_VARIANCE],
+            strategies=[
+                Strategy.SINGLE_VARIANCE,
+                Strategy.SINGLE_VARIANCE_1_5,
+                Strategy.MULTIPLE_VARIANCE,
+                Strategy.FULL_VARIANCE,
+            ],
             population_sizes=[30],
             num_children_list=[7],
             n_runs=3,
-            max_evaluations=50_000,
+            max_evaluations=MAX_EVALS,
             verbose=True,
         )
     else:
@@ -541,11 +554,10 @@ def main():
 
     if SAVE_CSV:
         bench.save_csv(CSV_PATH)
-    
+
     # ── Plots ─────────────────────────────────────────────────────────────────
     SAVE_PLOTS = True        # set False to show interactively instead of saving
-    PLOT_PATH  = "benchmark" # produces benchmark_convergence.png etc.
- 
+
     if SAVE_PLOTS:
         bench.plot(save_path=f"{PLOT_PATH}.png")
     else:

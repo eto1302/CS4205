@@ -5,6 +5,20 @@ from ES.evopy.strategy import Strategy
 from ES.evopy.utils import random_with_seed
 
 
+def reflect_into_bounds(x, low, high):
+    """Reflect values in ``x`` into the box [low, high] using a tent map.
+
+    Preserves the magnitude of the intended mutation step instead of
+    discarding it (which random-resample does).
+    """
+    range_ = high - low
+    if range_ <= 0:
+        return x
+    y = np.mod(x - low, 2.0 * range_)
+    y = np.where(y > range_, 2.0 * range_ - y, y)
+    return low + y
+
+
 class Individual:
     """The individual of the evolutionary strategy algorithm.
 
@@ -45,6 +59,8 @@ class Individual:
         elif strategy == Strategy.FULL_VARIANCE and len(strategy_parameters) == self.length * (
                 self.length + 1) / 2:
             self.reproduce = self._reproduce_full_variance
+        elif strategy == Strategy.SINGLE_VARIANCE_1_5 and len(strategy_parameters) == 1:
+            self.reproduce = self._reproduce_single_variance_1_5
         else:
             raise ValueError("The length of the strategy parameters was not correct.")
 
@@ -66,12 +82,26 @@ class Individual:
         :return: an individual which is the offspring of the current instance
         """
         new_genotype = self.genotype + self.strategy_parameters[0] * self.random.randn(self.length)
-        # Randomly sample out of bounds indices
-        oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
-        new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
+        # Reflect out-of-bounds coordinates back into [low, high] (preserves step magnitude).
+        new_genotype = reflect_into_bounds(new_genotype, self.bounds[0], self.bounds[1])
         scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         new_parameters = [max(self.strategy_parameters[0] * np.exp(scale_factor), self._EPSILON)]
         return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds, random_seed=self.random)
+
+    def _reproduce_single_variance_1_5(self):
+        """Create a single offspring under the 1/5 success-rule variant.
+
+        Sigma is owned and updated by :class:`EvoPy` at the population level
+        (see Rechenberg's 1/5 rule). The individual just samples a step of
+        magnitude ``strategy_parameters[0]`` and reflects into the bounds.
+        Note: there is no per-individual self-adaptation here — the inherited
+        sigma is simply passed through to the offspring.
+        """
+        sigma = self.strategy_parameters[0]
+        new_genotype = self.genotype + sigma * self.random.randn(self.length)
+        new_genotype = reflect_into_bounds(new_genotype, self.bounds[0], self.bounds[1])
+        return Individual(new_genotype, self.strategy, [sigma],
+                          bounds=self.bounds, random_seed=self.random)
 
     def _reproduce_multiple_variance(self):
         """Create a single offspring individual from the set genotype and strategy.
@@ -122,7 +152,8 @@ class Individual:
                 T_pq[p][q] = -np.sin(new_rotations[j])
                 T_pq[q][p] = -T_pq[p][q]
                 T = np.matmul(T, T_pq)
-        new_genotype = self.genotype + T @ self.random.randn(self.length)
+        # new_genotype = self.genotype + T @ self.random.randn(self.length)
+        new_genotype = self.genotype + T @ (np.array(new_variances) * self.random.randn(self.length))
         # Randomly sample out of bounds indices
         oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
         new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))

@@ -12,11 +12,18 @@ from ES.evopy.utils import random_with_seed
 class EvoPy:
     """Main class of the EvoPy package."""
 
+    _EPSILON = 1e-7
+    # Rechenberg's contraction factor for the 1/5 rule.
+    # success_rate > 1/5  => sigma /= _C_15 (grow)
+    # success_rate < 1/5  => sigma *= _C_15 (shrink)
+    _C_15 = 0.817
+
     def __init__(self, fitness_function, individual_length, warm_start=None, generations=100,
                  population_size=30, num_children=1, mean=0, std=1, maximize=False,
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
-                 max_evaluations=None, bounds=None):
+                 max_evaluations=None, bounds=None, selection_scheme="plus",
+                 init_sigma_scale=0.3):
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -37,6 +44,8 @@ class EvoPy:
         :param max_run_time: maximum time allowed to run in seconds
         :param max_evaluations: maximum allowed number of fitness function evaluations
         :param bounds: bounds for the sampling the parameters of individuals
+        :param selection_scheme: "plus" for (mu+lambda) or "comma" for (mu,lambda)
+        :param init_sigma_scale: initial step size as a fraction of the bounds range
         """
         self.fitness_function = fitness_function
         self.individual_length = individual_length
@@ -56,7 +65,11 @@ class EvoPy:
         self.max_run_time = max_run_time
         self.max_evaluations = max_evaluations
         self.bounds = bounds
+        self.selection_scheme = selection_scheme
+        self.init_sigma_scale = init_sigma_scale
         self.evaluations = 0
+        # Population-level sigma for the 1/5 rule variant (set in run()).
+        self._sigma_1_5 = None
 
     def _check_early_stop(self, start_time, best):
         """Check whether the algorithm can stop early, based on time and fitness target.
@@ -84,15 +97,55 @@ class EvoPy:
         start_time = time.time()
 
         population = self._init_population()
-        best = sorted(population, reverse=self.maximize,
-                      key=lambda individual: individual.evaluate(self.fitness_function))[0]
+        # Initial evaluation of parents (needed for (mu+lambda) and 1/5 rule).
+        for ind in population:
+            ind.evaluate(self.fitness_function)
+        self.evaluations += len(population)
+        population.sort(reverse=self.maximize, key=lambda ind: ind.fitness)
+        best = population[0]
+
+        use_1_5_rule = self.strategy == Strategy.SINGLE_VARIANCE_1_5
+        if use_1_5_rule:
+            bounds_range = (self.bounds[1] - self.bounds[0]) if self.bounds is not None else 1.0
+            self._sigma_1_5 = self.init_sigma_scale * bounds_range
 
         for generation in range(self.generations):
-            children = [parent.reproduce() for _ in range(self.num_children)
-                        for parent in population]
-            population = sorted(children, reverse=self.maximize,
-                                key=lambda individual: individual.evaluate(self.fitness_function))
-            self.evaluations += len(population)
+            parents = list(population)
+
+            # Inject the population-level sigma into all parents before reproduction,
+            # so every child uses the same currently-tuned step size.
+            if use_1_5_rule:
+                for p in parents:
+                    p.strategy_parameters = [self._sigma_1_5]
+
+            children = [parent.reproduce()
+                        for parent in parents
+                        for _ in range(self.num_children)]
+
+            for child in children:
+                child.evaluate(self.fitness_function)
+            self.evaluations += len(children)
+
+            # 1/5 success rule: update sigma based on the fraction of children
+            # that strictly improved over their parent.
+            if use_1_5_rule:
+                n_success = 0
+                for i, child in enumerate(children):
+                    parent_fit = parents[i // self.num_children].fitness
+                    improved = (child.fitness > parent_fit) if self.maximize \
+                        else (child.fitness < parent_fit)
+                    if improved:
+                        n_success += 1
+                success_rate = n_success / max(len(children), 1)
+                if success_rate > 1.0 / 5.0:
+                    self._sigma_1_5 /= self._C_15
+                elif success_rate < 1.0 / 5.0:
+                    self._sigma_1_5 *= self._C_15
+                self._sigma_1_5 = max(self._sigma_1_5, self._EPSILON)
+
+            # Selection: (mu+lambda) pools parents+children, (mu,lambda) only children.
+            pool = (parents + children) if self.selection_scheme == "plus" else children
+            population = sorted(pool, reverse=self.maximize, key=lambda ind: ind.fitness)
             population = population[:self.population_size]
             best = population[0]
 
@@ -107,33 +160,52 @@ class EvoPy:
         return best.genotype
 
     def _init_population(self):
+        # Sensible problem-scaled initial sigma rather than randn() which can give
+        # near-zero or negative values that collapse to the EPSILON floor.
+        bounds_range = (self.bounds[1] - self.bounds[0]) if self.bounds is not None else 1.0
+        sigma0 = self.init_sigma_scale * bounds_range
+        d = self.individual_length
+
         if self.strategy == Strategy.SINGLE_VARIANCE:
-            strategy_parameters = self.random.randn(1)
+            strategy_parameters = [sigma0]
         elif self.strategy == Strategy.MULTIPLE_VARIANCE:
-            strategy_parameters = self.random.randn(self.individual_length)
+            strategy_parameters = [sigma0] * d
         elif self.strategy == Strategy.FULL_VARIANCE:
-            strategy_parameters = self.random.randn(
-                int((self.individual_length + 1) * self.individual_length / 2))
+            # d variances (set to sigma0) + d(d-1)/2 rotation angles (set to 0 = identity).
+            strategy_parameters = [sigma0] * d + [0.0] * (d * (d - 1) // 2)
+        elif self.strategy == Strategy.SINGLE_VARIANCE_1_5:
+            # Placeholder; EvoPy.run() overwrites this each generation with the
+            # population-level sigma maintained by the 1/5 rule.
+            strategy_parameters = [sigma0]
         else:
             raise ValueError("Provided strategy parameter was not an instance of Strategy")
-        population_parameters = np.asarray([
-            self.warm_start + self.random.normal(loc=self.mean, scale=self.std, size=self.individual_length)
-            for _ in range(self.population_size)
-        ])
 
-        # Make sure parameters are within bounds
+        # Latin-hypercube initial population: spreads samples across [low, high]^d
+        # so circles are not all clustered near the centre at gen 0.
         if self.bounds is not None:
-            oob_indices = (population_parameters < self.bounds[0]) | (population_parameters > self.bounds[1])
-            population_parameters[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
+            samples = self._latin_hypercube(self.population_size, d)
+            population_parameters = self.bounds[0] + samples * bounds_range
+        else:
+            population_parameters = np.asarray([
+                self.warm_start + self.random.normal(loc=self.mean, scale=self.std, size=d)
+                for _ in range(self.population_size)
+            ])
 
         return [
             Individual(
-                # Initialize genotype within possible bounds
                 parameters,
-                # Set strategy parameters
-                self.strategy, strategy_parameters,
-                # Set seed and bounds for reproduction
+                self.strategy,
+                list(strategy_parameters),  # one independent copy per individual
                 random_seed=self.random,
-                bounds=self.bounds
+                bounds=self.bounds,
             ) for parameters in population_parameters
         ]
+
+    def _latin_hypercube(self, n_samples, n_dim):
+        """Generate a Latin-hypercube sample in [0,1)^n_dim using ``self.random``."""
+        samples = np.empty((n_samples, n_dim))
+        for j in range(n_dim):
+            perm = self.random.permutation(n_samples)
+            jitter = self.random.uniform(0.0, 1.0, n_samples)
+            samples[:, j] = (perm + jitter) / n_samples
+        return samples

@@ -12,7 +12,10 @@ class Strategy(Enum):
     - MULTIPLE_VARIANCE: each allele has its own variance, no covariances
     - FULL VARIANCE: each allele has its own variance, complete variances
                      (encoded as rotation angles)
+    - SINGLE_VARIANCE_1_5: single shared sigma updated by Rechenberg's 1/5
+                           success rule at the population level
     """
     SINGLE_VARIANCE = 1
     MULTIPLE_VARIANCE = 2
     FULL_VARIANCE = 3
+    SINGLE_VARIANCE_1_5 = 4
