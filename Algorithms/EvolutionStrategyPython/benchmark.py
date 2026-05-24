@@ -18,8 +18,16 @@ N_RUNS       = 25
 MAX_EVALS    = 100_000
 POPULATION   = 30
 GENERATIONS  = 1_000
-TARGET_TOL   = 1e-2
+TARGET_TOLS  = [1e-2, 1e-3, 1e-5]   # finest last; compute_summary loops over these
+CONFIG_LABEL = "baseline"
+INIT_MODES   = ["random", "cluster_corner"]   # cluster_corner = deceptive degenerate start
 RESULTS_DIR  = "results"
+
+# Cluster-trap warm-start parameters: all points in a tight corner cluster.
+# Chosen so warm_start ± 3σ stays inside bounds (avoids bounds-resampling
+# at init, which would otherwise destroy the cluster — see evopy.py:126).
+_CLUSTER_MEAN = 0.1
+_CLUSTER_STD  = 0.02
 
 # Known optimal min pairwise distances for n = 2..20 circles (from Packomania)
 _TARGETS = [
@@ -55,9 +63,25 @@ def circles_in_a_square(individual):
     return pdist(points).min()
 
 
+def _init_kwargs(init_mode, n_circles):
+    """Resolve init_mode to EvoPy warm_start/mean/std kwargs."""
+    if init_mode == "random":
+        # Defaults: warm_start=None → zeros; std=1 → most coords resampled
+        # uniformly across bounds (see evopy.py:126-127). Effectively uniform init.
+        return {}
+    if init_mode == "cluster_corner":
+        return {
+            'warm_start': np.full(n_circles * 2, _CLUSTER_MEAN),
+            'mean':       0.0,
+            'std':        _CLUSTER_STD,
+        }
+    raise ValueError(f"unknown init_mode: {init_mode!r}")
+
+
 def run_single(args):
     """Run one ES trial. Returns a DataFrame of per-generation statistics."""
-    n_circles, strategy, seed = args
+    n_circles, strategy, seed, init_mode = args
+    target = get_target(n_circles)
     records = []
 
     def reporter(report):
@@ -67,74 +91,78 @@ def run_single(args):
             'best_fitness': report.best_fitness,
             'avg_fitness':  report.avg_fitness,
             'std_fitness':  report.std_fitness,
+            'gap':          (target - report.best_fitness) / target,
         })
 
-    fitness_fn = circles_in_a_square
-
     EvoPy(
-        fitness_function=fitness_fn,
+        fitness_function=circles_in_a_square,
         individual_length=n_circles * 2,
         reporter=reporter,
         maximize=True,
         generations=GENERATIONS,
         population_size=POPULATION,
         bounds=(0, 1),
-        target_fitness_value=get_target(n_circles),
-        target_tolerance=TARGET_TOL,
+        target_fitness_value=target,
+        target_tolerance=min(TARGET_TOLS),
         max_evaluations=MAX_EVALS,
         random_seed=seed,
         strategy=strategy,
-        num_children=7
+        num_children=7,
+        **_init_kwargs(init_mode, n_circles),
     ).run()
 
     df = pd.DataFrame(records)
-    df['seed']    = seed
+    df['seed']      = seed
     df['n_circles'] = n_circles
     df['strategy']  = strategy.name
+    df['config']    = CONFIG_LABEL
+    df['init_mode'] = init_mode
     return df
 
 
-def compute_summary(run_dfs, target, n_circles, strategy_name):
+def compute_summary(run_dfs, target, n_circles, strategy_name, init_mode):
     final_rows    = [df.iloc[-1] for df in run_dfs]
     final_fitness = np.array([r['best_fitness'] for r in final_rows])
     final_evals   = np.array([r['evaluations']  for r in final_rows])
+    fitness_gap   = np.abs(final_fitness - target)
 
-    successes    = np.abs(final_fitness - target) < TARGET_TOL
-    n_success    = int(successes.sum())
-    success_rate = n_success / len(run_dfs)
+    row = {'n_circles': n_circles, 'strategy': strategy_name, 'init_mode': init_mode}
 
-    ert = float(final_evals.sum()) / n_success if n_success > 0 else float('inf')
+    # Per-tolerance metrics: SR, ERT, FHT — all computed offline from the same runs
+    for tol in TARGET_TOLS:
+        tag = f"{tol:.0e}"   # "1e-02", "1e-03", "1e-05"
+        successes = np.abs(final_fitness - target) < tol
+        n_success = int(successes.sum())
+        success_rate = n_success / len(run_dfs)
+        ert = float(final_evals.sum()) / n_success if n_success > 0 else float('inf')
 
-    fitness_gap = np.abs(final_fitness - target)
+        hitting_evals = []
+        for df, success in zip(run_dfs, successes):
+            if success:
+                hit = df[np.abs(df['best_fitness'] - target) < tol]
+                if not hit.empty:
+                    hitting_evals.append(hit.iloc[0]['evaluations'])
+        hitting_evals = np.array(hitting_evals) if hitting_evals else np.array([np.inf])
 
-    hitting_evals = []
-    for df, success in zip(run_dfs, successes):
-        if success:
-            hit = df[np.abs(df['best_fitness'] - target) < TARGET_TOL]
-            if not hit.empty:
-                hitting_evals.append(hit.iloc[0]['evaluations'])
-    hitting_evals = np.array(hitting_evals) if hitting_evals else np.array([np.inf])
+        row.update({
+            f'success_rate_{tag}':    round(success_rate, 4),
+            f'n_success_{tag}':       n_success,
+            f'ert_{tag}':             ert,
+            f'ert_normalised_{tag}':  ert / MAX_EVALS,
+            f'fht_median_{tag}':      float(np.median(hitting_evals)) if n_success > 0 else float('nan'),
+            f'fht_mean_{tag}':        float(np.mean(hitting_evals))   if n_success > 0 else float('nan'),
+            f'fht_std_{tag}':         float(np.std(hitting_evals))    if n_success > 1 else float('nan'),
+            f'fht_min_{tag}':         float(np.min(hitting_evals))    if n_success > 0 else float('nan'),
+        })
 
+    # Tolerance-independent metrics
     convergence_evals_90 = []
     threshold_90 = 0.9 * target
     for df in run_dfs:
         reached = df[df['best_fitness'] >= threshold_90]
         convergence_evals_90.append(reached.iloc[0]['evaluations'] if not reached.empty else np.inf)
 
-    return {
-        'n_circles':              n_circles,
-        'strategy':               strategy_name,
-        # Success
-        'success_rate':           round(success_rate, 4),
-        'n_success':              n_success,
-        # ERT (BBOB standard)
-        'ert':                    ert,
-        'ert_normalised':         ert / MAX_EVALS,
-        # First-hitting time (successful runs only)
-        'fht_median':             float(np.median(hitting_evals))   if n_success > 0 else float('nan'),
-        'fht_mean':               float(np.mean(hitting_evals))     if n_success > 0 else float('nan'),
-        'fht_std':                float(np.std(hitting_evals))      if n_success > 1 else float('nan'),
-        'fht_min':                float(np.min(hitting_evals))      if n_success > 0 else float('nan'),
+    row.update({
         # Final fitness
         'median_final_fitness':   float(np.median(final_fitness)),
         'mean_final_fitness':     float(np.mean(final_fitness)),
@@ -152,37 +180,41 @@ def compute_summary(run_dfs, target, n_circles, strategy_name):
         'median_evals_to_90pct':  float(np.median(convergence_evals_90)),
         # Budget exhaustion: how many runs hit the eval cap
         'budget_exhausted_count': int(np.sum(final_evals >= MAX_EVALS)),
-    }
+    })
+    return row
 
 
 def main():
     os.makedirs(RESULTS_DIR, exist_ok=True)
 
     summary_rows = []
-    configs = list(product(CIRCLE_SIZES, STRATEGIES))
+    configs = list(product(CIRCLE_SIZES, STRATEGIES, INIT_MODES))
 
     print(f"Benchmarking {len(configs)} configurations × {N_RUNS} runs each "
           f"(max {MAX_EVALS:,} evals/run)\n")
 
-    for n_circles, strategy in configs:
-        label = f"n={n_circles:2d}  strategy={strategy.name}"
+    for n_circles, strategy, init_mode in configs:
+        label = f"n={n_circles:2d}  strategy={strategy.name:<17s}  init={init_mode}"
         print(f"Running {label} ...", flush=True)
 
-        args_list = [(n_circles, strategy, seed) for seed in range(N_RUNS)]
+        args_list = [(n_circles, strategy, seed, init_mode) for seed in range(N_RUNS)]
 
         with multiprocessing.Pool() as pool:
             run_dfs = pool.map(run_single, args_list)
 
         combined = pd.concat(run_dfs, ignore_index=True)
-        fname = os.path.join(RESULTS_DIR, f"raw_{n_circles}circles_{strategy.name}.csv")
+        fname = os.path.join(RESULTS_DIR, f"raw_{n_circles}circles_{strategy.name}_{init_mode}.csv")
         combined.to_csv(fname, index=False)
 
         target  = get_target(n_circles)
-        summary = compute_summary(run_dfs, target, n_circles, strategy.name)
+        summary = compute_summary(run_dfs, target, n_circles, strategy.name, init_mode)
         summary_rows.append(summary)
 
-        ert_str = f"{summary['ert']:.0f}" if not np.isinf(summary['ert']) else ">max"
-        print(f"  success={summary['success_rate']:.2f}  ERT={ert_str}"
+        loose_tag = f"{max(TARGET_TOLS):.0e}"
+        sr_key  = f"success_rate_{loose_tag}"
+        ert_key = f"ert_{loose_tag}"
+        ert_str = f"{summary[ert_key]:.0f}" if not np.isinf(summary[ert_key]) else ">max"
+        print(f"  success@{loose_tag}={summary[sr_key]:.2f}  ERT@{loose_tag}={ert_str}"
               f"  median_fitness={summary['median_final_fitness']:.6f}")
 
     summary_df = pd.DataFrame(summary_rows)
