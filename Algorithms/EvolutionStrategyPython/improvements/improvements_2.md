@@ -36,6 +36,8 @@ clean head-to-head for the presentation.
 | 2.4 | Fix rotation-index bug | study-guide R2, BSw95 eq. 6.21 |
 | 2.5 | Restore textbook (μ, λ) selection-pressure ratio | study-guide R3, BSw95 p.11 |
 | 2.6 | Add recombination on strategy parameters | study-guide R4, BSw95 p.11 (3rd precondition) |
+| 2.7 | Use a more intelligent method for constraint handling | BACK & SCHWEFEL article |
+| 2.8 | Try direction dependant Evolution Strategy: `σ_1` for one arbitrary direction in search space, `σ_2` for all other perpendicular directions to the first one, ⚠️ probably not the best strategy for this problem structure | BACK & SCHWEFEL article | 
 
 ---
 
@@ -317,6 +319,48 @@ from a single parent — no mixing. BSw95 p.10 footnote 9 recommends:
 
 Effort: medium retrofit, ~30 lines (new `_make_child` helper +
 single-line change in main loop).
+
+### 4.6 Improve Constraint Handling 
+
+Current algorithm uses a random repair strategy, in individual.py, the same pattern appears after generating `new_genotype`, infeasible alleles are repaired in-place by resampling uniformly from the valid range `[bounds[0], bounds[1]]` :
+
+```python
+
+oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
+new_genotype[oob_indices] = self.random.uniform(
+    self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
+
+```
+Its main weakness is that repaired alleles lose any directional information from the mutation step, a value that mutated slightly past the boundary is treated the same as one that overshot massively, both getting replaced with a completely random value within bounds.
+
+It is proposed then a better alternative such as Clipping: clip out-of-bounds values to the nearest boundary
+
+Example of implementation:
+
+```python
+new_genotype = np.clip(new_genotype, self.bounds[0], self.bounds[1])
+```
+This preserves the direction of the mutation, which random repair throws away. A circle that mutated slightly past the wall gets pushed back to the wall, not teleported somewhere random.
+
+### 4.7 Only 2 std deviations: direction dependant search
+
+In the paper Evolution Strategies I: Variants and their computational implementation Thomas Back1 and Hans-Paul Schwefel, an additional Evolution Strategy is presented besides the Single Variance, Multiple Variance and Full covariance strategies already present in the algorithm.
+
+This new strategy is direction dependant: `a = (x_1, ..., x_n, σ_1, σ_2, α_1, ..., α_{n-1} )`
+Where, in one arbitrary direction of the search space, the search is performed with variance `(σ_1)^2`, whereas `(σ_2)^2` is the variance in all directions perpendicular to the first one. 
+
+the standard deviations `σ_1` and `σ_2`, determine the relation of the lengths of the main axes of the hyperellipsoid,
+and `α_{12}` represents the rotation angle of the hyperellipsoid. In the general case of correlated mutations, the mutation hyperellipsoid may align itself arbitrarily in the n-dimensional search space.
+
+Why would this Strategy would offer an improvement?
+
+This strategy would be worth trying on problems where:
+
+* The landscape has one dominant ridge or valley
+* Full Variance is too expensive (very high n)
+* We want more expressiveness than Multiple Variance without the O(n²) cost of Full Variance.
+
+However it is worth to mention that Circles in a Square does not necessarely adapt well with this strategy since each circle repels all others equally in all directions. The useful correlations in the search space involve pairs of circle coordinates (x_i, y_i together), not a single global preferred direction.
 
 ---
 
