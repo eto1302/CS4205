@@ -405,13 +405,13 @@ run in parallel on their own branches.
 
 | WP  | Owner  | Branch                             | Scope (TA-endorsed)                                   |
 | --- | ------ | ---------------------------------- | ----------------------------------------------------- |
-| 1   | Martin | `bugfix/ta-handoff`                | Bug fixes + stats/benchmark infra + p tests           |
+| 1   | Leo    | `bugfix/ta-handoff`                | Bug fixes + stats/benchmark infra + p tests           |
 | 2   | Ivan   | `selection-elitism`                | `(μ,λ)` vs `(μ+λ)` + elitist archive + reintroduction |
 | 3   | Cala   | `constraint-handling-improvements` | Repair-strategy comparison                            |
 | 4   | Agata  | `recombination`                    | Recombination operators + σ-strategy selection        |
-| 5   | Leo    | `gradient-hybrid`                  | EA + gradient local-search ("big" change)             |
+| 5   | Martin | `gradient-hybrid`                  | EA + gradient local-search ("big" change)             |
 
-### WP1 — Bug fixes + infra · Martin
+### WP1 — Bug fixes + infra · Leo
 - **Bugs** (delivered to TA, *not* presented): revert default to
   `selection_scheme="comma"`; τ operator-precedence (§4.3 R1); rotation
   index (§4.3 R2); `(μ,μ)`→`(μ,λ)` ratio across `main.py`/`benchmark.py`
@@ -443,7 +443,7 @@ We need p value tests. that is actually what this work package should most impor
 
 Ok claude made this one. I'm not entirely sure what this means, but I guess it is simply finding a scheme of operators which works best, with sound reasoning. also thinking of problem space symmetry.
 
-### WP5 — Gradient + EA hybrid ·  Leo
+### WP5 — Gradient + EA hybrid ·  Martin
 - EA = global search, local optimiser (L-BFGS-B on a smooth surrogate)
   = local polish; gradient evals charged to the eval budget. Modes:
   final-polish vs interleaved-polish vs pure EA. Demote to

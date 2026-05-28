@@ -23,7 +23,7 @@ class EvoPy:
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
                  max_evaluations=None, bounds=None, selection_scheme="plus",
-                 init_sigma_scale=0.3):
+                 init_sigma_scale=0.3, init="lhs"):
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -67,6 +67,7 @@ class EvoPy:
         self.bounds = bounds
         self.selection_scheme = selection_scheme
         self.init_sigma_scale = init_sigma_scale
+        self.init = init
         self.evaluations = 0
         # Population-level sigma for the 1/5 rule variant (set in run()).
         self._sigma_1_5 = None
@@ -182,9 +183,14 @@ class EvoPy:
 
         # Latin-hypercube initial population: spreads samples across [low, high]^d
         # so circles are not all clustered near the centre at gen 0.
-        if self.bounds is not None:
+        if self.bounds is not None and self.init == "lhs":
             samples = self._latin_hypercube(self.population_size, d)
             population_parameters = self.bounds[0] + samples * bounds_range
+        elif self.bounds is not None and self.init == "uniform":
+            # i.i.d. uniform in the box — the un-stratified control for the LHS
+            # ablation arm (same marginal as LHS, no space-filling stratification).
+            population_parameters = self.random.uniform(
+                self.bounds[0], self.bounds[1], size=(self.population_size, d))
         else:
             population_parameters = np.asarray([
                 self.warm_start + self.random.normal(loc=self.mean, scale=self.std, size=d)

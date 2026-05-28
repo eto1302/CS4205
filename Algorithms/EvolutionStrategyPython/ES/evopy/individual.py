@@ -116,12 +116,12 @@ class Individual:
         oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
         new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
         global_scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
-        scale_factors = [self.random.randn() * np.sqrt(1 / 2 * np.sqrt(self.length))
+        scale_factors = [self.random.randn() / np.sqrt(2 * np.sqrt(self.length))
                          for _ in range(self.length)]
         new_parameters = [max(np.exp(global_scale_factor + scale_factors[i])
                               * self.strategy_parameters[i], self._EPSILON)
                           for i in range(self.length)]
-        return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds)
+        return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds, random_seed=self.random)
 
     # pylint: disable=invalid-name
     def _reproduce_full_variance(self):
@@ -133,7 +133,7 @@ class Individual:
         :return: an individual which is the offspring of the current instance
         """
         global_scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
-        scale_factors = [self.random.randn() * np.sqrt(1 / 2 * np.sqrt(self.length))
+        scale_factors = [self.random.randn() / np.sqrt(2 * np.sqrt(self.length))
                          for _ in range(self.length)]
         new_variances = [max(np.exp(global_scale_factor + scale_factors[i])
                              * self.strategy_parameters[i], self._EPSILON)
@@ -146,7 +146,7 @@ class Individual:
         T = np.identity(self.length)
         for p in range(self.length - 1):
             for q in range(p + 1, self.length):
-                j = int((2 * self.length - p) * (p + 1) / 2 - 2 * self.length + q)
+                j = p * (2 * self.length - p - 1) // 2 + (q - p - 1)
                 T_pq = np.identity(self.length)
                 T_pq[p][p] = T_pq[q][q] = np.cos(new_rotations[j])
                 T_pq[p][q] = -np.sin(new_rotations[j])
@@ -157,4 +157,4 @@ class Individual:
         # Randomly sample out of bounds indices
         oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
         new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
-        return Individual(new_genotype, self.strategy, new_variances + new_rotations, bounds=self.bounds)
+        return Individual(new_genotype, self.strategy, new_variances + new_rotations, bounds=self.bounds, random_seed=self.random)
