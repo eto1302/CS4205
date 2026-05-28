@@ -226,7 +226,7 @@ Effort: easy bolt-on, ~20 lines.
 To answer "which selection is best for CiaS?" we should run both, plus
 an intelligent combination. Lecture 5's MO-GOMEA / UHV-GOMEA hybrid is
 exactly the architectural pattern
-([`Reading_Material_Uncrowded_Hypervolume-based.pdf`](../../../../lectures/lecture-5/Reading_Material_Uncrowded_Hypervolume-based.pdf)):
+([[2004.05068v1.pdf]])
 
 > "We construct a simple hybrid approach where we initially run
 > MO-GOMEA, which we terminate when it stagnates … We then switch to
@@ -388,4 +388,68 @@ heatmap). Lets us claim "iteration 2 improves success rate from X% to
 Y% at the strictest tolerance the algorithm reaches".
 
 ---
+
+## 6. Work packages (TA-meeting #2, 2026-05-27)
+
+Five packages, one owner each, one branch each. Only the directions
+Arthur endorsed on 2026-05-27 are kept; the direction-dependent 2-σ ES
+(§4.7) is parked as *considered-but-rejected* (no clear preferred
+direction in CiaS). **Every package reports a Mann–Whitney p-value vs.
+the baseline** (Arthur: significance almost everywhere) and a
+one-paragraph justification for *why* this direction (Arthur: no blind
+trying).
+
+**WP1 must land first** — it fixes the baseline and adds the shared
+benchmark/stats substrate the other four compare against. WP2–WP5 then
+run in parallel on their own branches. 
+
+| WP  | Owner  | Branch                             | Scope (TA-endorsed)                                   |
+| --- | ------ | ---------------------------------- | ----------------------------------------------------- |
+| 1   | Martin | `bugfix/ta-handoff`                | Bug fixes + stats/benchmark infra + p tests           |
+| 2   | Ivan   | `selection-elitism`                | `(μ,λ)` vs `(μ+λ)` + elitist archive + reintroduction |
+| 3   | Cala   | `constraint-handling-improvements` | Repair-strategy comparison                            |
+| 4   | Agata  | `recombination`                    | Recombination operators + σ-strategy selection        |
+| 5   | Leo    | `gradient-hybrid`                  | EA + gradient local-search ("big" change)             |
+
+### WP1 — Bug fixes + infra · Martin
+- **Bugs** (delivered to TA, *not* presented): revert default to
+  `selection_scheme="comma"`; τ operator-precedence (§4.3 R1); rotation
+  index (§4.3 R2); `(μ,μ)`→`(μ,λ)` ratio across `main.py`/`benchmark.py`
+  (§4.4). Track in `improvements/bug-fixes.md`.
+- **Infra**: Mann–Whitney columns in `summary.csv` + significance markers
+  in `plot_results.py`; `VARIANT` axis (V0…V2d, §5) in `benchmark.py`.
+We need p value tests. that is actually what this work package should most importantly work on.
+### WP2 — Selection & elitism · Ivan
+- `(μ, λ)` vs `(μ + λ)` head-to-head, with the §3.1 justification (not
+  blindly selected one or the other: good reasoning); optionally tournament vs truncation as the within-`(μ,λ)`
+  selector.
+- Elitist archive (§4.1) as the *bookkeeping* baseline **and** archive
+  **with reintroduction** into the population on stagnation (backup
+  population, diversity preservation). Two plots, as Arthur asked —
+  show whether the algorithm actually *uses* the archive.
+
+### WP3 — Constraint handling · Cala
+- 4-way repair comparison: random-resample (current) vs clip (§4.6) vs
+  reflection (already in) vs one symmetry-aware projector. Single
+  `_repair(genotype, mode)` helper in `individual.py`; sweep `mode`.
+
+### WP4 — Recombination & strategy-parameter selection · Agata
+- Recombination (§4.5): discrete on `x`, intermediary on `σ`; add a
+  CiaS-symmetry-aware operator that mixes whole `(xᵢ,yᵢ)` circle-pairs;
+  optionally a scheme that selects between operators.
+- Recombine only the *best-performing* strategy parameter (Arthur).
+- σ-strategy ablation (single/multiple/full) answering "at what point
+  does one beat another?" — needs WP1's τ + rotation fixes to be honest.
+
+Ok claude made this one. I'm not entirely sure what this means, but I guess it is simply finding a scheme of operators which works best, with sound reasoning. also thinking of problem space symmetry.
+
+### WP5 — Gradient + EA hybrid ·  Leo
+- EA = global search, local optimiser (L-BFGS-B on a smooth surrogate)
+  = local polish; gradient evals charged to the eval budget. Modes:
+  final-polish vs interleaved-polish vs pure EA. Demote to
+  "explored, here's what we found" if it doesn't beat pure EA.
+
+### Open question for Arthur (relay from Ivan)
+Improve all three σ-strategies in parallel, or commit to the most
+promising one? (WP4's ablation produces the data either way.)
 
