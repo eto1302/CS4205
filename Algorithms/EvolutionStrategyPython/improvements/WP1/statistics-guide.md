@@ -1,7 +1,7 @@
 ---
 title: "CS4205 Groupwork — Statistics, from scratch"
 subtitle: "Seeds, distributions, p-values, t-tests vs rank tests, effect size — the plain-English version"
-companion: "wp1-for-the-team.md · ../bug-fixes.md"
+companion: "README.md · bug-fixes.md"
 owner: "Leo (WP1)"
 audience: "anyone on the team who wants the intuition before the jargon"
 status: "v1. All figures use SYNTHETIC data shaped like real CiaS results."
