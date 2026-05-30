@@ -73,7 +73,8 @@ TREATMENTS = [
     ("B-no_lhs",  "WP1", {"init": "uniform"}),   # LHS ablation: quantifies LHS's contribution
     # ("B+archive",      "WP2", {"archive_size": 5}),       # Ivan
     # ("B+plus",         "WP2", {"selection_scheme": "plus"}),
-    # ("B-clip",         "WP3", {"repair": "clip"}),         # Cala
+    ("B-repair_clip",         "WP3", {"repair": "clip"}),         # Cala
+    ("B-repair_reflect",         "WP3", {"repair": "reflect"}),         # Cala
     # ("B+recomb",       "WP4", {"recombine": True}),        # Agata
     # ("B+final_polish", "WP5", {"local_search": "final"}),  # Martin
 ]
@@ -107,6 +108,7 @@ def run_one(overrides, n_circles, seed):
         "treatment": None, "wp": None, "n_circles": n_circles, "seed": seed,
         "strategy": kwargs["strategy"].name, "init": kwargs["init"],
         "selection_scheme": kwargs["selection_scheme"],
+        "repair": kwargs.get("repair", "random"),
         "final_best": round(final_best, 8),
         "final_gap": round((target - final_best) / target, 8),
         "total_evals": int(evals[-1]),
@@ -122,7 +124,7 @@ def run_one(overrides, n_circles, seed):
 def main():
     os.makedirs(RESULTS_DIR, exist_ok=True)
     fields = ["treatment", "wp", "n_circles", "seed", "strategy", "init",
-              "selection_scheme", "final_best", "final_gap", "total_evals",
+              "selection_scheme", "repair", "final_best", "final_gap", "total_evals",
               "total_generations"] + [f"evals_to_{t:.0e}" for t in TOLS]
 
     n_total = len(TREATMENTS) * len(CIRCLE_SIZES) * N_SEEDS
