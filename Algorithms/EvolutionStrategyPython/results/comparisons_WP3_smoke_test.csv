@@ -1,7 +1,0 @@
-treatment,wp,n_circles,metric,n_base,n_arm,base_median,arm_median,effect,ci_lo,ci_hi,a12,p_value,marker,note
-B-no_lhs,WP1,7,final_gap,3,3,,,,,,,,,insufficient data (few runs reached target)
-B-no_lhs,WP1,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
-B-repair_clip,WP3,7,final_gap,3,3,,,,,,,,,insufficient data (few runs reached target)
-B-repair_clip,WP3,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
-B-repair_reflect,WP3,7,final_gap,3,3,,,,,,,,,insufficient data (few runs reached target)
-B-repair_reflect,WP3,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
