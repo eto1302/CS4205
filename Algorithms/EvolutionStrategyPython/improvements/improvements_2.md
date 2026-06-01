@@ -419,6 +419,7 @@ run in parallel on their own branches.
 - **Infra**: Mann–Whitney columns in `summary.csv` + significance markers
   in `plot_results.py`; `VARIANT` axis (V0…V2d, §5) in `benchmark.py`.
 We need p value tests. that is actually what this work package should most importantly work on.
+
 ### WP2 — Selection & elitism · Ivan
 - `(μ, λ)` vs `(μ + λ)` head-to-head, with the §3.1 justification (not
   blindly selected one or the other: good reasoning); optionally tournament vs truncation as the within-`(μ,λ)`
