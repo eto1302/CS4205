@@ -1,0 +1,25 @@
+treatment,wp,n_circles,metric,n_base,n_arm,base_median,arm_median,effect,ci_lo,ci_hi,a12,p_value,marker,note
+FULL_VARIANCE,WP4,7,final_gap,10,10,0.265906,0.265906,0.0,-0.293323,0.298796,0.5,1.00e+00,ns,
+FULL_VARIANCE,WP4,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+FULL_VARIANCE,WP4,10,final_gap,10,10,0.475185,0.475185,0.0,-0.351302,0.326208,0.5,1.00e+00,ns,
+FULL_VARIANCE,WP4,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+FULL_VARIANCE,WP4,15,final_gap,10,10,0.618002,0.618002,0.0,-0.06808,0.064528,0.5,1.00e+00,ns,
+FULL_VARIANCE,WP4,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+FULL_VARIANCE,WP4,20,final_gap,10,10,0.668338,0.668338,0.0,-0.040214,0.03937,0.5,1.00e+00,ns,
+FULL_VARIANCE,WP4,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+MULTIPLE_VARIANCE,WP4,7,final_gap,10,10,0.265906,0.127711,0.138194,-0.07801,0.315408,0.68,1.86e-01,ns,
+MULTIPLE_VARIANCE,WP4,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+MULTIPLE_VARIANCE,WP4,10,final_gap,10,10,0.475185,0.221321,0.253865,-0.112102,0.336281,0.65,2.73e-01,ns,
+MULTIPLE_VARIANCE,WP4,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+MULTIPLE_VARIANCE,WP4,15,final_gap,10,10,0.618002,0.499452,0.11855,0.020475,0.201067,0.84,1.13e-02,*,
+MULTIPLE_VARIANCE,WP4,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+MULTIPLE_VARIANCE,WP4,20,final_gap,10,10,0.668338,0.631384,0.036954,-0.022194,0.082359,0.76,5.39e-02,ns,
+MULTIPLE_VARIANCE,WP4,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+SINGLE_VARIANCE,WP4,7,final_gap,10,10,0.265906,0.045851,0.220054,0.004242,0.397545,0.85,9.11e-03,**,
+SINGLE_VARIANCE,WP4,7,evals_to_1e-02,0,1,,,,,,,,,insufficient data (few runs reached target)
+SINGLE_VARIANCE,WP4,10,final_gap,10,10,0.475185,0.079377,0.395808,0.080132,0.478404,1.0,1.83e-04,***,
+SINGLE_VARIANCE,WP4,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+SINGLE_VARIANCE,WP4,15,final_gap,10,10,0.618002,0.18043,0.437572,0.381558,0.484987,1.0,1.83e-04,***,
+SINGLE_VARIANCE,WP4,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+SINGLE_VARIANCE,WP4,20,final_gap,10,10,0.668338,0.249201,0.419137,0.375059,0.440532,1.0,1.83e-04,***,
+SINGLE_VARIANCE,WP4,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)

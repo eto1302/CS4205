@@ -1,0 +1,13 @@
+treatment,wp,n_circles,seed,strategy,init,selection_scheme,final_best,final_gap,total_evals,total_generations,evals_to_1e-02,evals_to_1e-03,evals_to_1e-05
+B+recomb_coord,WP4,7,0,FULL_VARIANCE,lhs,comma,0.25262026,0.52860418,4020,19,,,
+B+recomb_coord,WP4,7,1,FULL_VARIANCE,lhs,comma,0.27687619,0.483342,4020,19,,,
+B+recomb_coord,WP4,7,2,FULL_VARIANCE,lhs,comma,0.28857556,0.46151068,4020,19,,,
+B+recomb_coord,WP4,7,3,FULL_VARIANCE,lhs,comma,0.26141906,0.51218538,4020,19,,,
+B+recomb_coord,WP4,7,4,FULL_VARIANCE,lhs,comma,0.27899281,0.47939233,4020,19,,,
+B+recomb_coord,WP4,7,5,FULL_VARIANCE,lhs,comma,0.32168336,0.39973068,4020,19,,,
+B+recomb_pair,WP4,7,0,FULL_VARIANCE,lhs,comma,0.31579934,0.41071042,4020,19,,,
+B+recomb_pair,WP4,7,1,FULL_VARIANCE,lhs,comma,0.29505266,0.44942425,4020,19,,,
+B+recomb_pair,WP4,7,2,FULL_VARIANCE,lhs,comma,0.30841967,0.42448105,4020,19,,,
+B+recomb_pair,WP4,7,3,FULL_VARIANCE,lhs,comma,0.3105909,0.42042948,4020,19,,,
+B+recomb_pair,WP4,7,4,FULL_VARIANCE,lhs,comma,0.29199645,0.45512721,4020,19,,,
+B+recomb_pair,WP4,7,5,FULL_VARIANCE,lhs,comma,0.27868117,0.47997386,4020,19,,,

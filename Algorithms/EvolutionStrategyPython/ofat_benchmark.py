@@ -74,6 +74,8 @@ BASELINE = dict(
 TREATMENTS = [
     ("baseline",  "WP1", {}),
     ("B-no_lhs",  "WP1", {"init": "uniform"}),   # LHS ablation: quantifies LHS's contribution
+    ("B+recomb_coord", "WP4", {"recombine": True, "recombination_mode": "coordinate"}),
+    ("B+recomb_pair",  "WP4", {"recombine": True, "recombination_mode": "circle_pair"}),
     # ("B+archive",      "WP2", {"archive_size": 5}),       # Ivan
     # ("B+plus",         "WP2", {"selection_scheme": "plus"}),
     # ("B-clip",         "WP3", {"repair": "clip"}),         # Cala

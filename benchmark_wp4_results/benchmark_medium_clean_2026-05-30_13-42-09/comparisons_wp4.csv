@@ -1,0 +1,9 @@
+treatment,wp,n_circles,metric,n_base,n_arm,base_median,arm_median,effect,ci_lo,ci_hi,a12,p_value,marker,note
+B+recomb_coord,WP4,7,final_gap,10,10,0.265906,0.446081,-0.180175,-0.396378,0.017971,0.21,3.12e-02,*,
+B+recomb_coord,WP4,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+recomb_coord,WP4,10,final_gap,10,10,0.475185,0.540476,-0.065291,-0.38849,0.011788,0.26,7.57e-02,ns,
+B+recomb_coord,WP4,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+recomb_pair,WP4,7,final_gap,10,10,0.265906,0.451294,-0.185389,-0.401669,-0.012015,0.14,7.28e-03,**,
+B+recomb_pair,WP4,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+recomb_pair,WP4,10,final_gap,10,10,0.475185,0.554544,-0.079359,-0.390947,0.003237,0.27,8.90e-02,ns,
+B+recomb_pair,WP4,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)

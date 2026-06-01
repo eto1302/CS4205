@@ -7,6 +7,7 @@ from ES.evopy.individual import Individual
 from ES.evopy.progress_report import ProgressReport
 from ES.evopy.strategy import Strategy
 from ES.evopy.utils import random_with_seed
+from ES.evopy.recombination import recombine_individuals
 
 
 class EvoPy:
@@ -23,7 +24,8 @@ class EvoPy:
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
                  max_evaluations=None, bounds=None, selection_scheme="plus",
-                 init_sigma_scale=0.3, init="lhs"):
+                 init_sigma_scale=0.3, init="lhs", recombine=False,
+                 recombination_mode="coordinate"):
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -71,6 +73,9 @@ class EvoPy:
         self.evaluations = 0
         # Population-level sigma for the 1/5 rule variant (set in run()).
         self._sigma_1_5 = None
+        # recombination options
+        self.recombine = recombine
+        self.recombination_mode = recombination_mode
 
     def _check_early_stop(self, start_time, best):
         """Check whether the algorithm can stop early, based on time and fitness target.
@@ -119,9 +124,25 @@ class EvoPy:
                 for p in parents:
                     p.strategy_parameters = [self._sigma_1_5]
 
-            children = [parent.reproduce()
-                        for parent in parents
-                        for _ in range(self.num_children)]
+            if not self.recombine:
+                children = [parent.reproduce()
+                            for parent in parents
+                            for _ in range(self.num_children)]
+            else:
+                children = []
+                for parent in parents:
+                    for _ in range(self.num_children):
+                        # pick a mate distinct from parent when possible
+                        if len(parents) > 1:
+                            possible_mates = [p for p in parents if p is not parent]
+                            mate = self.random.choice(possible_mates)
+                        else:
+                            mate = parent
+                        geno, strat = recombine_individuals(parent, mate, mode=self.recombination_mode, random=self.random)
+                        # create a temporary parent with recombined params and let it reproduce
+                        tmp = Individual(geno, parent.strategy, list(strat), bounds=parent.bounds, random_seed=self.random)
+                        child = tmp.reproduce()
+                        children.append(child)
 
             for child in children:
                 child.evaluate(self.fitness_function)
