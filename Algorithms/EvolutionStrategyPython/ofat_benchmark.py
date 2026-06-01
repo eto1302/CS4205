@@ -58,7 +58,9 @@ def fitness(individual):
 
 # ── Architecture B: frozen baseline + one-line-per-WP treatment registry ─────
 BASELINE = dict(
-    strategy=Strategy.FULL_VARIANCE,
+    strategy=Strategy.SINGLE_VARIANCE,  # B pins single-variance: simplest/cheapest neutral
+                                        # reference, and WP4's σ-ablation shows single wins at
+                                        # every n. multiple/full are WP4 ablation arms, not B.
     selection_scheme="comma",          # B pins (mu,lambda); scheme choice is WP2's axis
     init="lhs",
     population_size=POPULATION,

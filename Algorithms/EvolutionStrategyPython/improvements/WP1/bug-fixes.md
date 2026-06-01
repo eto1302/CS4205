@@ -38,7 +38,9 @@ FULL_VARIANCE      ok | seed-reproducible=True | best_min_dist=0.3172
 ## Note on the baseline / Architecture B
 
 These fixes are baked into the frozen baseline **B** that the OFAT comparison
-(see `README.md`) measures every arm against. The **selection
-scheme of B** (comma vs plus) is a baseline-definition / WP2 decision, *not*
-fixed here. The *buggy* V0 numbers, if wanted for the narrative ladder, are
-reproducible from the pre-fix commit on `main`.
+(see `README.md`) measures every arm against. **B pins SINGLE_VARIANCE**
+(changed from FULL_VARIANCE on 2026-06-01 — WP4's σ-ablation showed single wins
+at every n; multiple/full are WP4 ablation arms, not the baseline). The
+**selection scheme of B** (comma vs plus) is a baseline-definition / WP2
+decision, *not* fixed here. The *buggy* V0 numbers, if wanted for the narrative
+ladder, are reproducible from the pre-fix commit on `main`.
