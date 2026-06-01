@@ -91,6 +91,7 @@ class RunResult:
     n_circles: int
     run_id: int
     strategy: str
+    selection_scheme: str   # "comma" = (mu,lambda) | "plus" = (mu+lambda)
     population_size: int
     num_children: int
     best_fitness: float
@@ -111,6 +112,7 @@ class SummaryStats:
 
     n_circles: int
     strategy: str
+    selection_scheme: str   # "comma" = (mu,lambda) | "plus" = (mu+lambda)
     population_size: int
     num_children: int
     n_runs: int
@@ -135,6 +137,7 @@ class Benchmark:
         strategies: list[Strategy],
         population_sizes: list[int],
         num_children_list: list[int],
+        selection_schemes: list[str] = ("comma", "plus"),
         n_runs: int = 10,
         max_evaluations: int = 100_000,
         tolerance: float = 1e-4,
@@ -146,6 +149,7 @@ class Benchmark:
         self.strategies = strategies
         self.population_sizes = population_sizes
         self.num_children_list = num_children_list
+        self.selection_schemes = list(selection_schemes)
         self.n_runs = n_runs
         self.max_evaluations = max_evaluations
         self.tolerance = tolerance
@@ -159,6 +163,7 @@ class Benchmark:
             strategy: Strategy,
             population_size: int,
             num_children: int,
+            selection_scheme: str,
             run_id: int,
     ) -> RunResult:
         
@@ -183,6 +188,7 @@ class Benchmark:
             population_size = population_size,
             num_children=num_children,
             strategy=strategy,
+            selection_scheme=selection_scheme,
             bounds = (0,1),
             target_fitness_value = optimum,
             target_tolerance = self.tolerance,
@@ -202,6 +208,7 @@ class Benchmark:
             n_circles=n_circles,
             run_id=run_id,
             strategy=strategy.name,
+            selection_scheme=selection_scheme,
             population_size=population_size,
             num_children=num_children,
             best_fitness=best_fitness,
@@ -217,35 +224,37 @@ class Benchmark:
     def run_all(self):
         """Run the full benchmark grid: every 
         combination of:
-        n_circles x strategy x population_size x num_children x run_id
+        n_circles x strategy x selection_scheme x population_size x num_children x run_id
         calls _run_single for each of them
         Every combination gets the same number of runs
         """
         configs = [
-            (n, s, p, c)
+            (n, s, sel, p, c)
             for n in self.n_circles_list
             for s in self.strategies
+            for sel in self.selection_schemes
             for p in self.population_sizes
             for c in self.num_children_list
         ]
 
-        total = len(configs) * self.n_runs 
+        total = len(configs) * self.n_runs
         done = 0 # runs completed so far
 
-        for n_circles, strategy, population_size, num_children in configs:
+        for n_circles, strategy, selection_scheme, population_size, num_children in configs:
             for run_id in range(self.n_runs):
                 if self.verbose: # to indicate in the terminal which run is running
                     done += 1
                     tag = (
                         f"[{done}/{total}] "
-                        f"n={n_circles} strat={strategy.name} "
+                        f"n={n_circles} strat={strategy.name} sel={selection_scheme} "
                         f"pop={population_size} children={num_children} "
                         f"run={run_id}"
                     )
                     print(tag, end="\r", flush=True)
- 
+
                 result = self._run_single(
-                    n_circles, strategy, population_size, num_children, run_id
+                    n_circles, strategy, population_size, num_children,
+                    selection_scheme, run_id
                 )
                 self.results.append(result) 
 
@@ -257,20 +266,21 @@ class Benchmark:
         """Aggregate results into per-configuration summary stats."""
         from itertools import groupby
  
-        key = lambda r: (r.n_circles, r.strategy, r.population_size, r.num_children)
+        key = lambda r: (r.n_circles, r.strategy, r.selection_scheme, r.population_size, r.num_children)
         sorted_results = sorted(self.results, key=key)
- 
+
         summaries = []
-        for (n_circles, strategy, pop, children), group in groupby(sorted_results, key=key):
+        for (n_circles, strategy, selection_scheme, pop, children), group in groupby(sorted_results, key=key):
             runs = list(group)
             gaps = [r.gap_pct for r in runs]
             evals = [r.evaluations_used for r in runs]
             times = [r.wall_time_s for r in runs]
             fitnesses = sorted([r.best_fitness for r in runs])
- 
+
             summaries.append(SummaryStats(
                 n_circles=n_circles,
                 strategy=strategy,
+                selection_scheme=selection_scheme,
                 population_size=pop,
                 num_children=children,
                 n_runs=len(runs),
@@ -291,24 +301,24 @@ class Benchmark:
         summaries = self.summarize()
  
         # Header
-        print("\n" + "═" * 110)
+        print("\n" + "═" * 122)
         print(
-            f"{'n':>3} {'strategy':<18} {'pop':>4} {'chd':>4} "
+            f"{'n':>3} {'strategy':<18} {'sel':>6} {'pop':>4} {'chd':>4} "
             f"{'success%':>9} {'mean gap%':>10} {'±gap%':>7} "
             f"{'mean evals':>11} {'±evals':>9} {'mean t(s)':>9} "
             f"{'median fit':>11} {'optimum':>11}"
         )
-        print("─" * 110)
- 
+        print("─" * 122)
+
         for s in summaries:
             print(
-                f"{s.n_circles:>3} {s.strategy:<18} {s.population_size:>4} {s.num_children:>4} "
+                f"{s.n_circles:>3} {s.strategy:<18} {s.selection_scheme:>6} {s.population_size:>4} {s.num_children:>4} "
                 f"{s.success_rate * 100:>8.1f}% {s.mean_gap_pct:>10.4f} {s.std_gap_pct:>7.4f} "
                 f"{s.mean_evals:>11.0f} {s.std_evals:>9.0f} {s.mean_time_s:>9.3f} "
                 f"{s.median_best_fitness:>11.6f} {s.optimum:>11.6f}"
             )
- 
-        print("═" * 110)
+
+        print("═" * 122)
  
     def convergence_table(self):
         """
@@ -363,9 +373,12 @@ class Benchmark:
             return
         
         n_circles_list = sorted(set(r.n_circles for r in self.results))
-        strategies = sorted(set(r.strategy  for r in self.results))
+        # A plotted "series" is one (strategy, selection_scheme) pair, so (mu,lambda)
+        # and (mu+lambda) of the same strategy get distinct colours/labels.
+        series = sorted(set((r.strategy, r.selection_scheme) for r in self.results))
         colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-        strat_color    = {s: colors[i % len(colors)] for i, s in enumerate(strategies)}
+        series_color = {sc: colors[i % len(colors)] for i, sc in enumerate(series)}
+        series_label = lambda sc: f"{sc[0]} / {sc[1]}"
 
         # ── 1. Convergence curves ─────────────────────────────────────────────
         n_cols  = min(2, len(n_circles_list))
@@ -379,17 +392,20 @@ class Benchmark:
             ax = axes1[idx // n_cols][idx % n_cols]
             optimum = KNOWN_OPTIMA[n - 2]
  
-            for strat in strategies:
-                runs = [r for r in self.results if r.n_circles == n and r.strategy == strat]
-                color = strat_color[strat]
- 
+            for sc in series:
+                strat, scheme = sc
+                runs = [r for r in self.results
+                        if r.n_circles == n and r.strategy == strat
+                        and r.selection_scheme == scheme]
+                color = series_color[sc]
+
                 # Plot every individual run as a faint line
                 for r in runs:
                     if not r.trace:
                         continue
                     evals, fits = zip(*r.trace)
                     ax.plot(evals, fits, color=color, alpha=0.15, linewidth=0.8)
- 
+
                 # Plot the mean trace as a solid line
                 # Interpolate all traces onto a common eval grid first
                 all_evals = sorted(set(ev for r in runs for ev, _ in r.trace))
@@ -406,11 +422,11 @@ class Benchmark:
                             mean_fits.append(mean(vals))
                         else:
                             mean_fits.append(None)
- 
+
                     clean_evals = [e for e, f in zip(all_evals, mean_fits) if f is not None]
                     clean_fits  = [f for f in mean_fits if f is not None]
                     ax.plot(clean_evals, clean_fits, color=color,
-                            linewidth=2, label=strat)
+                            linewidth=2, label=series_label(sc))
  
             # Known optimum reference line
             ax.axhline(optimum, color="black", linewidth=1,
@@ -434,21 +450,23 @@ class Benchmark:
  
         summaries   = self.summarize()
         x           = np.arange(len(n_circles_list))
-        bar_width   = 0.8 / len(strategies)
- 
-        for i, strat in enumerate(strategies):
+        bar_width   = 0.8 / len(series)
+
+        for i, sc in enumerate(series):
+            strat, scheme = sc
             rates = []
             for n in n_circles_list:
                 matching = [s for s in summaries
-                            if s.n_circles == n and s.strategy == strat]
+                            if s.n_circles == n and s.strategy == strat
+                            and s.selection_scheme == scheme]
                 if matching:
                     # Average success rate across all pop/children configs
                     rates.append(mean(s.success_rate for s in matching) * 100)
                 else:
                     rates.append(0.0)
-            offset = (i - len(strategies) / 2 + 0.5) * bar_width
+            offset = (i - len(series) / 2 + 0.5) * bar_width
             bars = ax2.bar(x + offset, rates, bar_width,
-                           label=strat, color=strat_color[strat], alpha=0.85)
+                           label=series_label(sc), color=series_color[sc], alpha=0.85)
             # Value labels on bars
             for bar, rate in zip(bars, rates):
                 if rate > 0:
@@ -474,15 +492,17 @@ class Benchmark:
             ax = axes3[0][idx]
             data   = []
             labels = []
-            for strat in strategies:
+            for sc in series:
+                strat, scheme = sc
                 gaps = [r.gap_pct for r in self.results
-                        if r.n_circles == n and r.strategy == strat]
+                        if r.n_circles == n and r.strategy == strat
+                        and r.selection_scheme == scheme]
                 data.append(gaps)
-                labels.append(strat.replace("_", "\n"))
- 
+                labels.append(f"{strat.replace('_', chr(10))}\n{scheme}")
+
             bp = ax.boxplot(data, patch_artist=True, widths=0.5)
-            for patch, strat in zip(bp["boxes"], strategies):
-                patch.set_facecolor(strat_color[strat])
+            for patch, sc in zip(bp["boxes"], series):
+                patch.set_facecolor(series_color[sc])
                 patch.set_alpha(0.75)
  
             ax.set_title(f"{n} circles")
@@ -508,6 +528,13 @@ class Benchmark:
 # ─── Entry point ─────────────────────────────────────────────────────────────
   
 def main():
+    # Windows consoles default to cp1252, which can't encode the table's
+    # box-drawing chars / arrows — force UTF-8 so the run doesn't crash on print.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
     # ── Configure your run here ──────────────────────
     QUICK        = True
     SAVE_CSV     = True
@@ -523,14 +550,13 @@ def main():
     PLOT_PATH = os.path.join(run_dir, "benchmark")
 
     if QUICK:
+        # WP2 selection head-to-head: hold strategy fixed (FULL_VARIANCE, the
+        # Architecture-B baseline) and sweep the selection scheme so the only
+        # varied factor is (mu,lambda) vs (mu+lambda).
         bench = Benchmark(
             n_circles_list=[5, 8],
-            strategies=[
-                Strategy.SINGLE_VARIANCE,
-                Strategy.SINGLE_VARIANCE_1_5,
-                Strategy.MULTIPLE_VARIANCE,
-                Strategy.FULL_VARIANCE,
-            ],
+            strategies=[Strategy.FULL_VARIANCE],
+            selection_schemes=["comma", "plus"],   # (mu,lambda) vs (mu+lambda)
             population_sizes=[30],
             num_children_list=[7],
             n_runs=3,
@@ -541,6 +567,7 @@ def main():
         bench = Benchmark(
             n_circles_list=[5, 7, 10, 15],
             strategies=[Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE],
+            selection_schemes=["comma", "plus"],   # (mu,lambda) vs (mu+lambda)
             population_sizes=[15, 30, 50],
             num_children_list=[5, 10],
             n_runs=N_RUNS,

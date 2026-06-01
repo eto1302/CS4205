@@ -66,11 +66,18 @@ BASELINE = dict(
 )
 
 # (label, owning-WP, overrides-on-top-of-BASELINE). Each WP appends ONE line.
+#
+# WP2 selection head-to-head: the baseline IS the (mu,lambda) arm
+# (selection_scheme="comma", §3.1), so the "B+plus" treatment below is the
+# (mu+lambda) arm. stats.py compares them automatically (Mann-Whitney + A12),
+# giving the (mu,lambda) vs (mu+lambda) head-to-head with the §3.1 justification:
+# BSw95 §6.4 — (mu+lambda) lets a misadapted sigma survive on CiaS plateaus,
+# hindering self-adaptation; modern ES default to (mu,lambda).
 TREATMENTS = [
     ("baseline",  "WP1", {}),
     ("B-no_lhs",  "WP1", {"init": "uniform"}),   # LHS ablation: quantifies LHS's contribution
+    ("B+plus",    "WP2", {"selection_scheme": "plus"}),   # Ivan: (mu+lambda) arm vs (mu,lambda) baseline (§3.1)
     # ("B+archive",      "WP2", {"archive_size": 5}),       # Ivan
-    # ("B+plus",         "WP2", {"selection_scheme": "plus"}),
     # ("B-clip",         "WP3", {"repair": "clip"}),         # Cala
     # ("B+recomb",       "WP4", {"recombine": True}),        # Agata
     # ("B+final_polish", "WP5", {"local_search": "final"}),  # Martin
