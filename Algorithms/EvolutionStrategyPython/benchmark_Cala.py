@@ -569,7 +569,7 @@ def main():
     # ── Configure your run here ──────────────────────
     # QUICK=True  → WP2 archive × selection factorial (Ivan's study below).
     # QUICK=False → Cala's broader strategy/pop/children sweep (archive off).
-    QUICK        = True
+    QUICK        = False
     SAVE_CSV     = True
     N_RUNS       = 10
     MAX_EVALS    = 50_000
@@ -610,6 +610,9 @@ def main():
             n_circles_list=[5, 7, 10, 15],
             strategies=[Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE],
             selection_schemes=["comma", "plus"],   # (mu,lambda) vs (mu+lambda)
+            archive_modes=["off", "bookkeeping", "reintroduction"],
+            archive_size=5,
+            stagnation_generations=20,
             population_sizes=[15, 30, 50],
             num_children_list=[5, 10],
             n_runs=N_RUNS,
