@@ -26,7 +26,8 @@ not a tuning improvement — see the LHS note below.)
 ## 1 · The method: OFAT against a frozen baseline
 
 We use **OFAT — One-Factor-At-A-Time**. There is **one frozen baseline B**
-(bug-fixed, `(μ,λ)`, LHS init, **SINGLE_VARIANCE**). Every improvement = B with
+(bug-fixed, `(μ,λ)`, LHS init, **SINGLE_VARIANCE**, **random-resample repair**).
+Every improvement = B with
 **exactly one thing changed**, compared against **the same B**, over
 **25 seeds × n ∈ {7,10,15,20}**. Because only your factor changes, the measured
 effect is **yours alone, unconfounded** by anyone else's change.
@@ -36,6 +37,12 @@ effect is **yours alone, unconfounded** by anyone else's change.
 > at every n (multiple/full are slower to adapt and don't beat it in our budget),
 > so single is the honest baseline and multiple/full are WP4 **ablation arms**,
 > not the baseline. (Changed from FULL_VARIANCE on 2026-06-01.)
+>
+> **Why random-resample repair for B?** B uses the *original* random-resample for
+> out-of-bounds alleles — the honest starting point — so that better repair
+> (reflection, clip) shows up as a **measurable WP3 improvement** instead of being
+> silently baked in. Measured: reflection cuts the gap ~3.6× at n=15 / ~2.8× at
+> n=20 vs random — a real WP3 win, now creditable rather than hidden.
 
 The headline output is a **forest plot** — one row per improvement:
 

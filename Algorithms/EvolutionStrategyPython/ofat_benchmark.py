@@ -65,6 +65,9 @@ BASELINE = dict(
     init="lhs",
     population_size=POPULATION,
     num_children=NUM_CHILDREN,
+    # Repair: B uses the ORIGINAL random-resample for out-of-bounds alleles (now
+    # consistent across all strategies in individual.py). Reflection/clip are
+    # measurable WP3 improvements, NOT baked into the baseline.
 )
 
 # (label, owning-WP, overrides-on-top-of-BASELINE). Each WP appends ONE line.

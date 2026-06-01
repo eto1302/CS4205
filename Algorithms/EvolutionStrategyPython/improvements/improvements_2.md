@@ -429,9 +429,12 @@ We need p value tests. that is actually what this work package should most impor
   show whether the algorithm actually *uses* the archive.
 
 ### WP3 — Constraint handling · Cala
-- 4-way repair comparison: random-resample (current) vs clip (§4.6) vs
-  reflection (already in) vs one symmetry-aware projector. Single
-  `_repair(genotype, mode)` helper in `individual.py`; sweep `mode`.
+- **Baseline B now uses random-resample repair** (the original) so reflection and
+  clip are *measurable improvements*, not baked in. 4-way repair comparison vs B:
+  random (baseline) vs **reflection** vs **clip** (§4.6) vs one symmetry-aware
+  projector. Single `_repair(genotype, mode)` helper in `individual.py`; sweep
+  `mode`, default `random`. (Measured: reflection ≈3.6× better gap at n=15 vs
+  random — a real WP3 win that was previously hidden inside the baseline.)
 
 ### WP4 — Recombination & strategy-parameter selection · Agata
 - **σ-strategy ablation (single/multiple/full)** vs the **single-variance baseline**
