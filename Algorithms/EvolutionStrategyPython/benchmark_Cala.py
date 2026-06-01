@@ -92,6 +92,7 @@ class RunResult:
     run_id: int
     strategy: str
     selection_scheme: str   # "comma" = (mu,lambda) | "plus" = (mu+lambda)
+    archive_mode: str       # "off" | "bookkeeping" | "reintroduction"
     population_size: int
     num_children: int
     best_fitness: float
@@ -113,6 +114,7 @@ class SummaryStats:
     n_circles: int
     strategy: str
     selection_scheme: str   # "comma" = (mu,lambda) | "plus" = (mu+lambda)
+    archive_mode: str       # "off" | "bookkeeping" | "reintroduction"
     population_size: int
     num_children: int
     n_runs: int
@@ -138,6 +140,9 @@ class Benchmark:
         population_sizes: list[int],
         num_children_list: list[int],
         selection_schemes: list[str] = ("comma", "plus"),
+        archive_modes: list[str] = ("off",),
+        archive_size: int = 5,
+        stagnation_generations: int = 20,
         n_runs: int = 10,
         max_evaluations: int = 100_000,
         tolerance: float = 1e-4,
@@ -150,6 +155,9 @@ class Benchmark:
         self.population_sizes = population_sizes
         self.num_children_list = num_children_list
         self.selection_schemes = list(selection_schemes)
+        self.archive_modes = list(archive_modes)
+        self.archive_size = archive_size
+        self.stagnation_generations = stagnation_generations
         self.n_runs = n_runs
         self.max_evaluations = max_evaluations
         self.tolerance = tolerance
@@ -164,6 +172,7 @@ class Benchmark:
             population_size: int,
             num_children: int,
             selection_scheme: str,
+            archive_mode: str,
             run_id: int,
     ) -> RunResult:
         
@@ -189,6 +198,9 @@ class Benchmark:
             num_children=num_children,
             strategy=strategy,
             selection_scheme=selection_scheme,
+            archive_mode=archive_mode,
+            archive_size=self.archive_size,
+            stagnation_generations=self.stagnation_generations,
             bounds = (0,1),
             target_fitness_value = optimum,
             target_tolerance = self.tolerance,
@@ -209,6 +221,7 @@ class Benchmark:
             run_id=run_id,
             strategy=strategy.name,
             selection_scheme=selection_scheme,
+            archive_mode=archive_mode,
             population_size=population_size,
             num_children=num_children,
             best_fitness=best_fitness,
@@ -224,15 +237,16 @@ class Benchmark:
     def run_all(self):
         """Run the full benchmark grid: every 
         combination of:
-        n_circles x strategy x selection_scheme x population_size x num_children x run_id
+        n_circles x strategy x selection_scheme x archive_mode x population_size x num_children x run_id
         calls _run_single for each of them
         Every combination gets the same number of runs
         """
         configs = [
-            (n, s, sel, p, c)
+            (n, s, sel, arch, p, c)
             for n in self.n_circles_list
             for s in self.strategies
             for sel in self.selection_schemes
+            for arch in self.archive_modes
             for p in self.population_sizes
             for c in self.num_children_list
         ]
@@ -240,13 +254,14 @@ class Benchmark:
         total = len(configs) * self.n_runs
         done = 0 # runs completed so far
 
-        for n_circles, strategy, selection_scheme, population_size, num_children in configs:
+        for n_circles, strategy, selection_scheme, archive_mode, population_size, num_children in configs:
             for run_id in range(self.n_runs):
                 if self.verbose: # to indicate in the terminal which run is running
                     done += 1
                     tag = (
                         f"[{done}/{total}] "
                         f"n={n_circles} strat={strategy.name} sel={selection_scheme} "
+                        f"arch={archive_mode} "
                         f"pop={population_size} children={num_children} "
                         f"run={run_id}"
                     )
@@ -254,7 +269,7 @@ class Benchmark:
 
                 result = self._run_single(
                     n_circles, strategy, population_size, num_children,
-                    selection_scheme, run_id
+                    selection_scheme, archive_mode, run_id
                 )
                 self.results.append(result) 
 
@@ -266,11 +281,11 @@ class Benchmark:
         """Aggregate results into per-configuration summary stats."""
         from itertools import groupby
  
-        key = lambda r: (r.n_circles, r.strategy, r.selection_scheme, r.population_size, r.num_children)
+        key = lambda r: (r.n_circles, r.strategy, r.selection_scheme, r.archive_mode, r.population_size, r.num_children)
         sorted_results = sorted(self.results, key=key)
 
         summaries = []
-        for (n_circles, strategy, selection_scheme, pop, children), group in groupby(sorted_results, key=key):
+        for (n_circles, strategy, selection_scheme, archive_mode, pop, children), group in groupby(sorted_results, key=key):
             runs = list(group)
             gaps = [r.gap_pct for r in runs]
             evals = [r.evaluations_used for r in runs]
@@ -281,6 +296,7 @@ class Benchmark:
                 n_circles=n_circles,
                 strategy=strategy,
                 selection_scheme=selection_scheme,
+                archive_mode=archive_mode,
                 population_size=pop,
                 num_children=children,
                 n_runs=len(runs),
@@ -301,24 +317,24 @@ class Benchmark:
         summaries = self.summarize()
  
         # Header
-        print("\n" + "═" * 122)
+        print("\n" + "═" * 138)
         print(
-            f"{'n':>3} {'strategy':<18} {'sel':>6} {'pop':>4} {'chd':>4} "
+            f"{'n':>3} {'strategy':<18} {'sel':>6} {'archive':>15} {'pop':>4} {'chd':>4} "
             f"{'success%':>9} {'mean gap%':>10} {'±gap%':>7} "
             f"{'mean evals':>11} {'±evals':>9} {'mean t(s)':>9} "
             f"{'median fit':>11} {'optimum':>11}"
         )
-        print("─" * 122)
+        print("─" * 138)
 
         for s in summaries:
             print(
-                f"{s.n_circles:>3} {s.strategy:<18} {s.selection_scheme:>6} {s.population_size:>4} {s.num_children:>4} "
+                f"{s.n_circles:>3} {s.strategy:<18} {s.selection_scheme:>6} {s.archive_mode:>15} {s.population_size:>4} {s.num_children:>4} "
                 f"{s.success_rate * 100:>8.1f}% {s.mean_gap_pct:>10.4f} {s.std_gap_pct:>7.4f} "
                 f"{s.mean_evals:>11.0f} {s.std_evals:>9.0f} {s.mean_time_s:>9.3f} "
                 f"{s.median_best_fitness:>11.6f} {s.optimum:>11.6f}"
             )
 
-        print("═" * 122)
+        print("═" * 138)
  
     def convergence_table(self):
         """
@@ -373,12 +389,24 @@ class Benchmark:
             return
         
         n_circles_list = sorted(set(r.n_circles for r in self.results))
-        # A plotted "series" is one (strategy, selection_scheme) pair, so (mu,lambda)
-        # and (mu+lambda) of the same strategy get distinct colours/labels.
-        series = sorted(set((r.strategy, r.selection_scheme) for r in self.results))
+        # A plotted "series" is one (strategy, selection_scheme, archive_mode)
+        # combination, so every distinct config gets its own colour/label —
+        # e.g. comma+bookkeeping vs plus+reintroduction are separate curves.
+        series = sorted(set((r.strategy, r.selection_scheme, r.archive_mode)
+                            for r in self.results))
         colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
         series_color = {sc: colors[i % len(colors)] for i, sc in enumerate(series)}
-        series_label = lambda sc: f"{sc[0]} / {sc[1]}"
+        # Only label the axes that actually vary, so labels stay short when a
+        # factor is held fixed (e.g. a single strategy across the whole grid).
+        _vary_strat  = len({s[0] for s in series}) > 1
+        _vary_scheme = len({s[1] for s in series}) > 1
+        _vary_arch   = len({s[2] for s in series}) > 1
+        def series_label(sc):
+            parts = []
+            if _vary_strat:  parts.append(sc[0])
+            if _vary_scheme: parts.append(sc[1])
+            if _vary_arch:   parts.append(sc[2])
+            return " / ".join(parts) if parts else sc[0]
 
         # ── 1. Convergence curves ─────────────────────────────────────────────
         n_cols  = min(2, len(n_circles_list))
@@ -393,10 +421,11 @@ class Benchmark:
             optimum = KNOWN_OPTIMA[n - 2]
  
             for sc in series:
-                strat, scheme = sc
+                strat, scheme, archive = sc
                 runs = [r for r in self.results
                         if r.n_circles == n and r.strategy == strat
-                        and r.selection_scheme == scheme]
+                        and r.selection_scheme == scheme
+                        and r.archive_mode == archive]
                 color = series_color[sc]
 
                 # Plot every individual run as a faint line
@@ -453,12 +482,13 @@ class Benchmark:
         bar_width   = 0.8 / len(series)
 
         for i, sc in enumerate(series):
-            strat, scheme = sc
+            strat, scheme, archive = sc
             rates = []
             for n in n_circles_list:
                 matching = [s for s in summaries
                             if s.n_circles == n and s.strategy == strat
-                            and s.selection_scheme == scheme]
+                            and s.selection_scheme == scheme
+                            and s.archive_mode == archive]
                 if matching:
                     # Average success rate across all pop/children configs
                     rates.append(mean(s.success_rate for s in matching) * 100)
@@ -493,12 +523,13 @@ class Benchmark:
             data   = []
             labels = []
             for sc in series:
-                strat, scheme = sc
+                strat, scheme, archive = sc
                 gaps = [r.gap_pct for r in self.results
                         if r.n_circles == n and r.strategy == strat
-                        and r.selection_scheme == scheme]
+                        and r.selection_scheme == scheme
+                        and r.archive_mode == archive]
                 data.append(gaps)
-                labels.append(f"{strat.replace('_', chr(10))}\n{scheme}")
+                labels.append(series_label(sc).replace(" / ", "\n"))
 
             bp = ax.boxplot(data, patch_artist=True, widths=0.5)
             for patch, sc in zip(bp["boxes"], series):
@@ -536,6 +567,8 @@ def main():
         pass
 
     # ── Configure your run here ──────────────────────
+    # QUICK=True  → WP2 archive × selection factorial (Ivan's study below).
+    # QUICK=False → Cala's broader strategy/pop/children sweep (archive off).
     QUICK        = True
     SAVE_CSV     = True
     N_RUNS       = 10
@@ -550,13 +583,22 @@ def main():
     PLOT_PATH = os.path.join(run_dir, "benchmark")
 
     if QUICK:
-        # WP2 selection head-to-head: hold strategy fixed (FULL_VARIANCE, the
-        # Architecture-B baseline) and sweep the selection scheme so the only
-        # varied factor is (mu,lambda) vs (mu+lambda).
+        # WP2 archive × selection factorial. Strategy is held fixed
+        # (FULL_VARIANCE, the Architecture-B baseline) so the only varied
+        # factors are the selection scheme and the archive mode. This answers
+        # both of Ivan's questions in one grid:
+        #   * archive head-to-head: bookkeeping vs reintroduction (vs the
+        #     "off" reference, which shows whether the algorithm actually
+        #     *uses* the archive — Arthur's question);
+        #   * best combination: 2 selections × 3 archive modes = 6 series,
+        #     so we can read off which (selection, archive) pair wins.
         bench = Benchmark(
             n_circles_list=[5, 8],
             strategies=[Strategy.FULL_VARIANCE],
-            selection_schemes=["comma", "plus"],   # (mu,lambda) vs (mu+lambda)
+            selection_schemes=["comma", "plus"],            # (mu,lambda) vs (mu+lambda)
+            archive_modes=["off", "bookkeeping", "reintroduction"],
+            archive_size=5,
+            stagnation_generations=20,
             population_sizes=[30],
             num_children_list=[7],
             n_runs=3,
