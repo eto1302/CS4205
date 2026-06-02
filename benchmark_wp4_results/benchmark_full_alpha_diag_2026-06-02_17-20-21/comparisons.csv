@@ -1,0 +1,9 @@
+n,treatment,baseline_median,treatment_median,effect,baseline_iqr,treatment_iqr,n_baseline,n_treatment,p_value,A12,significance
+7,full_recomb_coordinate,0.30734225,0.39861492,-0.09127267,0.0,0.0,1,1,1.0,0.0,ns
+7,full_recomb_circle_pair,0.30734225,0.51702807,-0.20968581999999997,0.0,0.0,1,1,1.0,0.0,ns
+7,full_recomb_coordinate_alpha,0.30734225,0.51702807,-0.20968581999999997,0.0,0.0,1,1,1.0,0.0,ns
+7,full_recomb_circle_pair_alpha,0.30734225,0.51702807,-0.20968581999999997,0.0,0.0,1,1,1.0,0.0,ns
+10,full_recomb_coordinate,0.17025774,0.52701193,-0.35675419,0.0,0.0,1,1,1.0,0.0,ns
+10,full_recomb_circle_pair,0.17025774,0.55745904,-0.3872013,0.0,0.0,1,1,1.0,0.0,ns
+10,full_recomb_coordinate_alpha,0.17025774,0.53349743,-0.36323969000000006,0.0,0.0,1,1,1.0,0.0,ns
+10,full_recomb_circle_pair_alpha,0.17025774,0.56280686,-0.39254912000000003,0.0,0.0,1,1,1.0,0.0,ns

@@ -1,0 +1,11 @@
+treatment,wp,n_circles,seed,strategy,init,selection_scheme,final_best,final_gap,total_evals,total_generations,evals_to_1e-02,evals_to_1e-03,evals_to_1e-05
+full_baseline,WP4,7,0,FULL_VARIANCE,lhs,comma,0.37119417,0.30734225,20190,96,,,
+full_baseline,WP4,10,0,FULL_VARIANCE,lhs,comma,0.34955344,0.17025774,20190,96,,,
+full_recomb_circle_pair,WP4,7,0,FULL_VARIANCE,lhs,comma,0.25882388,0.51702807,20190,96,,,
+full_recomb_circle_pair,WP4,10,0,FULL_VARIANCE,lhs,comma,0.18643345,0.55745904,20190,96,,,
+full_recomb_circle_pair_alpha,WP4,7,0,FULL_VARIANCE,lhs,comma,0.25882388,0.51702807,20190,96,,,
+full_recomb_circle_pair_alpha,WP4,10,0,FULL_VARIANCE,lhs,comma,0.18418053,0.56280686,20190,96,,,
+full_recomb_coordinate,WP4,7,0,FULL_VARIANCE,lhs,comma,0.32228129,0.39861492,20190,96,,,
+full_recomb_coordinate,WP4,10,0,FULL_VARIANCE,lhs,comma,0.1992602,0.52701193,20190,96,,,
+full_recomb_coordinate_alpha,WP4,7,0,FULL_VARIANCE,lhs,comma,0.25882388,0.51702807,20190,96,,,
+full_recomb_coordinate_alpha,WP4,10,0,FULL_VARIANCE,lhs,comma,0.19652799,0.53349743,20190,96,,,
