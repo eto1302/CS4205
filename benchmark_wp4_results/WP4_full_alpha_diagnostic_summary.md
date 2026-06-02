@@ -60,13 +60,7 @@ The \(\alpha\) rotation parameters are inherited unchanged from one parent. This
 2. **Exploratory alpha-aware recombination**  
    In the exploratory `*_alpha` modes, the \(\sigma\) parameters are still averaged, but the \(\alpha\) rotation parameters are recombined using a circular mean:
 
-$\alpha_{\text{child}}
-=
-\operatorname{atan2}
-\left(
-\sin(\alpha^{(1)}) + \sin(\alpha^{(2)}),
-\cos(\alpha^{(1)}) + \cos(\alpha^{(2)})
-\right)$
+$\alpha_{\text{child}} = \operatorname{atan2} \left( \sin(\alpha^{(1)}) + \sin(\alpha^{(2)}), \cos(\alpha^{(1)}) + \cos(\alpha^{(2)}) \right)$
 
 This avoids naive arithmetic averaging of angles near the wrap-around boundary, for example near \(-\pi\) and \(+\pi\).
 
