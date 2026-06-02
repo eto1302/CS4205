@@ -571,8 +571,8 @@ def main():
     # QUICK=False → Cala's broader strategy/pop/children sweep (archive off).
     QUICK        = False
     SAVE_CSV     = True
-    N_RUNS       = 10
-    MAX_EVALS    = 50_000
+    N_RUNS       = 4
+    MAX_EVALS    = 300000
     # ─────────────────────────────────────────────────
 
     run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

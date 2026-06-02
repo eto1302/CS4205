@@ -23,7 +23,8 @@ import matplotlib.patches as mpatches
 HERE = os.path.dirname(os.path.abspath(__file__))
 CSV_PATH = os.path.join(HERE, "benchmark_results_cala.csv")
 OUT_PATH = os.path.join(HERE, "benchmark_gap_boxplot.png")
-
+CSV_PATH = "Algorithms/EvolutionStrategyPython/improvements/WP2/benchmark_comma_vs_plus_bookeeping_vs_reintroduction_300000evals_2026-06-01_18-23-33/benchmark_results_cala.csv"
+OUT_PATH = "Algorithms/EvolutionStrategyPython/improvements/WP2/benchmark_comma_vs_plus_bookeeping_vs_reintroduction_300000evals_2026-06-01_18-23-33/benchmark_gap_boxplot.png"
 
 def load_rows():
     with open(CSV_PATH, newline="") as fh:
