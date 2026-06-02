@@ -58,9 +58,8 @@ For strategy parameters, two variants were tested:
 1. **Standard ES-style strategy recombination**  
    The \(\sigma\) parameters are recombined by intermediary/arithmetic recombination:
 
-\[
-\sigma_{\text{child}} = \frac{\sigma^{(1)} + \sigma^{(2)}}{2}
-\]
+$\sigma_{\text{child}} = \frac{\sigma^{(1)} + \sigma^{(2)}}{2}$
+
 
 The \(\alpha\) rotation parameters are inherited unchanged from one parent. This corresponds to the base rule used earlier in WP4: recombine object variables and step sizes, but do not introduce a special covariance/orientation recombination operator.
 
