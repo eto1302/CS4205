@@ -9,6 +9,18 @@ import numpy as np
 from ES.evopy.strategy import Strategy
 
 
+def circular_mean_angles(a, b):
+    """Circular mean between angles a and b.
+
+    Works for scalars or numpy arrays and returns values in [-pi, pi].
+    """
+    a_arr = np.asarray(a)
+    b_arr = np.asarray(b)
+    s = np.sin(a_arr) + np.sin(b_arr)
+    c = np.cos(a_arr) + np.cos(b_arr)
+    return np.arctan2(s, c)
+
+
 def recombine_individuals(parent_a, parent_b, mode="coordinate", random=None):
     """Recombine two individuals.
 
@@ -26,11 +38,14 @@ def recombine_individuals(parent_a, parent_b, mode="coordinate", random=None):
     # Genotypes: numpy arrays
     a_g = np.asarray(parent_a.genotype)
     b_g = np.asarray(parent_b.genotype)
+    # support alpha-aware mode names by grouping
+    coord_modes = ("coordinate", "coordinate_alpha")
+    pair_modes = ("circle_pair", "circle_pair_alpha")
 
-    if mode == "coordinate":
+    if mode in coord_modes:
         mask = rng.randint(0, 2, size=a_g.shape, dtype=bool)
         new_genotype = np.where(mask, a_g, b_g)
-    elif mode == "circle_pair":
+    elif mode in pair_modes:
         # genotype interpreted as (x0,y0,x1,y1,...). Recombine whole pairs.
         if a_g.size % 2 != 0:
             # fall back to coordinate if odd-length
@@ -52,15 +67,27 @@ def recombine_individuals(parent_a, parent_b, mode="coordinate", random=None):
     a_s_arr = np.asarray(a_s)
     b_s_arr = np.asarray(b_s)
 
+    # use module-level circular_mean_angles
+
     # If the parents use FULL_VARIANCE, average only the first d sigma values
-    # and inherit rotation angles (alpha) from parent_a. For SINGLE_VARIANCE
-    # and MULTIPLE_VARIANCE, average all strategy parameters element-wise.
+    # and handle rotation angles (alpha) according to mode suffix.
     if isinstance(parent_a.strategy, Strategy) and parent_a.strategy == Strategy.FULL_VARIANCE:
         d = parent_a.length
         # safe-guard lengths
         if a_s_arr.size >= d and b_s_arr.size >= d:
             sigma_part = (a_s_arr[:d] + b_s_arr[:d]) / 2.0
-            rotation_part = a_s_arr[d:]
+            # compute rotation/alpha part if present in both parents
+            a_rot = a_s_arr[d:]
+            b_rot = b_s_arr[d:]
+            if mode.endswith("_alpha") and a_rot.size > 0 and b_rot.size > 0:
+                rot_len = min(a_rot.size, b_rot.size)
+                rotation_part = circular_mean_angles(a_rot[:rot_len], b_rot[:rot_len])
+                # if one parent has extra rotation entries, keep them from a
+                if a_rot.size > rot_len:
+                    rotation_part = np.concatenate([rotation_part, a_rot[rot_len:]])
+            else:
+                # inherit rotations from parent_a (preserve existing behaviour)
+                rotation_part = a_rot
             new_strategy = np.concatenate([sigma_part, rotation_part])
         else:
             # fallback: average up to min length and keep remainder from a
