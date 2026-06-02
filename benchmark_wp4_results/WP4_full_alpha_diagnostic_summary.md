@@ -25,15 +25,11 @@ In the project implementation, an individual has:
 
 - object variables / genotype:
 
-\[
-x = (x_0, y_0, x_1, y_1, \ldots, x_{n-1}, y_{n-1})
-\]
+$x = (x_0, y_0, x_1, y_1, \ldots, x_{n-1}, y_{n-1})$
 
 - strategy parameters for `FULL_VARIANCE`:
 
-\[
-(\sigma_1, \ldots, \sigma_d, \alpha_1, \ldots, \alpha_{d(d-1)/2})
-\]
+$(\sigma_1, \ldots, \sigma_d, \alpha_1, \ldots, \alpha_{d(d-1)/2})$
 
 where \(d = 2n\) is the number of object variables. The \(\sigma\) values control mutation step sizes, while the \(\alpha\) values represent rotation/inclination parameters for correlated mutation.
 
@@ -44,9 +40,7 @@ Two object-variable recombination schemes were tested:
 1. **Coordinate-wise recombination**  
    Each scalar coordinate is inherited discretely from one of the two parents. For example, each entry of
 
-\[
-(x_0, y_0, x_1, y_1, \ldots)
-\]
+$(x_0, y_0, x_1, y_1, \ldots)$
 
 is independently chosen from either parent.
 
@@ -66,15 +60,13 @@ The \(\alpha\) rotation parameters are inherited unchanged from one parent. This
 2. **Exploratory alpha-aware recombination**  
    In the exploratory `*_alpha` modes, the \(\sigma\) parameters are still averaged, but the \(\alpha\) rotation parameters are recombined using a circular mean:
 
-\[
-\alpha_{\text{child}}
+$\alpha_{\text{child}}
 =
 \operatorname{atan2}
 \left(
 \sin(\alpha^{(1)}) + \sin(\alpha^{(2)}),
 \cos(\alpha^{(1)}) + \cos(\alpha^{(2)})
-\right)
-\]
+\right)$
 
 This avoids naive arithmetic averaging of angles near the wrap-around boundary, for example near \(-\pi\) and \(+\pi\).
 
