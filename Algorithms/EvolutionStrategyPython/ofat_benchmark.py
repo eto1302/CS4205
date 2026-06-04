@@ -25,7 +25,7 @@ import numpy as np
 from ES.evopy import EvoPy, Strategy
 
 # ── config (env-overridable so the smoke test is cheap) ──────────────────────
-CIRCLE_SIZES = [int(x) for x in os.environ.get("WP1_NS", "17").split(",")]
+CIRCLE_SIZES = [int(x) for x in os.environ.get("WP1_NS", "15").split(",")]
 N_SEEDS      = int(os.environ.get("WP1_SEEDS", "25"))
 MAX_EVALS    = int(os.environ.get("WP1_EVALS", "100000"))
 POPULATION   = 30
@@ -58,7 +58,7 @@ def fitness(individual):
 
 # ── Architecture B: frozen baseline + one-line-per-WP treatment registry ─────
 BASELINE = dict(
-    strategy=Strategy.FULL_VARIANCE,
+    strategy=Strategy.SINGLE_VARIANCE,
     selection_scheme="comma",          # B pins (mu,lambda); scheme choice is WP2's axis
     init="lhs",
     population_size=POPULATION,
