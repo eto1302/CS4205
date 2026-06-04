@@ -119,7 +119,7 @@ V1  →  V2  →  V3  →  V4
 | Variant | WP | What is added |
 |---|---|---|
 | V1 | WP1 | Bug fixes |
-| V2 | WP3 | Reflection repair |
+| V2 | WP3 | Clipping repair |
 | V3 | WP2 | Elitist archive |
 | V4 | WP5 | Gradient polish |
 | V4b | WP4 | Recombination (branch off V3, honest negative) |
