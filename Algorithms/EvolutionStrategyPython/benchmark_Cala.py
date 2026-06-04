@@ -567,12 +567,10 @@ def main():
         pass
 
     # ── Configure your run here ──────────────────────
-    # QUICK=True  → WP2 archive × selection factorial (Ivan's study below).
-    # QUICK=False → Cala's broader strategy/pop/children sweep (archive off).
     QUICK        = False
     SAVE_CSV     = True
-    N_RUNS       = 4
-    MAX_EVALS    = 300000
+    N_RUNS       = 25
+    MAX_EVALS    = 100000
     # ─────────────────────────────────────────────────
 
     run_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -607,8 +605,8 @@ def main():
         )
     else:
         bench = Benchmark(
-            n_circles_list=[5, 7, 10, 15],
-            strategies=[Strategy.SINGLE_VARIANCE, Strategy.MULTIPLE_VARIANCE],
+            n_circles_list=[5, 7, 10, 15, 20],
+            strategies=[Strategy.SINGLE_VARIANCE],
             selection_schemes=["comma", "plus"],   # (mu,lambda) vs (mu+lambda)
             archive_modes=["off", "bookkeeping", "reintroduction"],
             archive_size=5,

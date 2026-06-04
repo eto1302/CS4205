@@ -58,7 +58,7 @@ def fitness(individual):
 
 # ── Architecture B: frozen baseline + one-line-per-WP treatment registry ─────
 BASELINE = dict(
-    strategy=Strategy.FULL_VARIANCE,
+    strategy=Strategy.SINGLE_VARIANCE,  # group-agreed Architecture-B baseline (one shared sigma)
     selection_scheme="comma",          # B pins (mu,lambda); scheme choice is WP2's axis
     init="lhs",
     population_size=POPULATION,
