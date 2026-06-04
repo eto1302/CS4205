@@ -1,0 +1,121 @@
+\setlength{\parskip}{1.2ex plus0.7ex}%
+%\setlength{\parskip}{\myfontscale\parskip}
+
+% https://tex.stackexchange.com/questions/11211/can-i-have-framed-blocks-in-beamer
+% https://www.ctan.org/pkg/beamertheme-tcolorbox
+% alternatively: https://ctan.org/pkg/mdframed
+\useinnertheme[
+  rounded=false,
+  shaded=false,
+  shadow=false,
+]{tcolorbox}
+
+\newenvironment{abstikz}[1][]{%
+  \textblock{1}[0.5, 0.5](0.5, 0.5)%
+    \tikzpicture[x=\paperwidth, y=\paperheight, #1]
+      \path[use as bounding box]
+        (0, 0) rectangle (1, 1);
+}{
+    \endtikzpicture%
+  \endtextblock
+}
+
+\def\beamer@andinst{\\[.5em]}
+
+\newcommand{\sectioningheader}[1]%
+  {\medskip\filbreak\usebeamercolor{bars}\ifx\f@family\namesansserif%
+  \textcolor{bg}{\textbf{#1}}\else% i.e. colored text in 'normal' sans serif context
+  \textcolor{fg}{\textbf{#1}}\fi}% i.e. white when serif, supposedly in a block
+
+% first (optional) argument is for starred version
+\AtBeginSection[\sectioningheader{\LARGE\secname}\addtocounter{section}{-1}{\\*[\parskip]}]
+  {\sectioningheader{\LARGE\thesection\ \secname}\\*[\parskip]}
+
+\AtBeginSubsection[\sectioningheader{\Large\subsecname}\addtocounter{subsection}{-1}{\\*[\parskip]}]
+  {\sectioningheader{\Large\thesection.\thesubsection\ \subsecname}\\*[\parskip]}
+
+\AtBeginSubsubsection[\sectioningheader{\large\subsubsecname}\addtocounter{subsubsection}{-1}{\\*[\parskip]}]
+  {\sectioningheader{\large\thesection.\thesubsection.\thesubsubsection\ \subsubsecname}\\*[\parskip]}
+
+\newcommand{\paragraph}[1]{\sectioningheader{#1}}
+
+\newlength{\meanmargin}
+\newcommand{\widthfrac}[2]{\dimexpr(\linewidth+\columnsep)*#1/#2-\columnsep}
+
+\meanmargin=\dimexpr0.5\beamer@leftmargin+0.5\beamer@rightmargin
+% based on /usr/local/texlive/2023/texmf-dist/tex/latex/beamer/beamerouterthemedefault.sty
+\setbeamertemplate{frametitle}{%
+  \ifbeamercolorempty[bg]{frametitle}{}{\nointerlineskip}%
+  \@tempdima=\paperwidth%
+  \@tempdimb=0.5\beamer@leftmargin%
+  \@tempdimc=0.5\beamer@leftmargin%
+  %\advance\@tempdima by\beamer@leftmargin%
+  %\advance\@tempdima by\beamer@rightmargin%
+  % see \S 12.5 Framed and Boxed Text in beameruserguide.pdf
+  \mbox{\begin{beamercolorbox}[left,sep=0.5\beamer@leftmargin,
+    leftskip=\the\@tempdimb,rightskip=\the\@tempdimc,wd=\the\@tempdima]{frametitle}
+    \usebeamerfont{frametitle}%
+    \vbox{}\vskip-1ex%
+    \if@tempswa\else\csname beamer@fteleft\endcsname\fi%
+    \strut\insertframetitle\strut\par%
+    {%
+      \ifx\insertframesubtitle\@empty%
+      \else%
+      {\usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\strut\insertframesubtitle\strut\par}%
+      \fi%
+    }%
+    \vskip-1ex%
+    \if@tempswa\else\vskip-.3cm\fi% set inside beamercolorbox... evil here...
+  \end{beamercolorbox}%
+  \vspace*{-1ex}%
+}}
+
+\newif\ifleftfooterwhite
+\newif\ifrightfooterwhite
+\newif\iffootnotesright
+\leftfooterwhitefalse
+\rightfooterwhitefalse
+\footnotesrightfalse
+\newlength{\footermargin}
+\setlength{\footermargin}{0.05\paperheight}
+
+% \setbeamertemplate{title}{\titlepageformat\inserttitle}
+% \setbeamertemplate{subtitle}{\titlepageformat\insertsubtitle}
+% \setbeamertemplate{author}{\titlepageformat\insertauthor}\par
+% \setbeamertemplate{date}{\titlepageformat\insertdate}\par
+% % line spacing would be inconsistent without final `\\'
+% \setbeamertemplate{institute}{\titlepageformat\hfill\insertinstitute\inst{}}
+
+\setbeamertemplate{enumerate item}{\alph{enumi}.}
+\setbeamertemplate{enumerate subitem}{\arabic{enumii}.}
+\setbeamertemplate{enumerate subsubitem}{\roman{enumiii}.}
+
+\setbeamertemplate{itemize/enumerate body begin}{%
+  \renewcommand\theenumi{\alph{enumi}}%
+  \renewcommand\theenumii{\theenumi.\arabic{enumii}}%
+  \renewcommand\theenumiii{\theenumii.\roman{enumiii}}}
+
+\newcommand\itemlabel{\tikz[baseline, x=1ex, y=1ex]{\fill (0, 0.5) rectangle (0.5, 1)}}
+\setbeamertemplate{itemize item}{\itemlabel}
+\setbeamertemplate{itemize subitem}{\itemlabel}
+\setbeamertemplate{itemize subsubitem}{\itemlabel}
+
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subsubbody}{size=\normalsize}
+\setbeamertemplate{itemize/enumerate body begin}{\setlength{\leftmargini}{5mm}\usebeamercolor{normal text}\color{fg}}
+\setbeamertemplate{itemize/enumerate subbody begin}{\setlength{\leftmargini}{5mm}\usebeamercolor{normal text}\color{fg}}
+\setbeamertemplate{itemize/enumerate subsubbody begin}{\setlength{\leftmargini}{5mm}\usebeamercolor{normal text}\color{fg}}
+\setbeamertemplate{description body begin}{\setlength{\leftmargini}{5mm}\usebeamercolor{normal text}\color{fg}}
+
+\setlength{\leftmargini}{0.5cm}
+\setlength{\leftmarginii}{0.5cm}
+\setlength{\leftmarginiii}{0.5cm}
+\setlength{\itemindent}{0cm}
+
+\setbeamercolor{block title}{bg=tud Blue, fg=white}
+\setbeamercolor{block body}{bg=tud Blue!10, fg=black}
+\setbeamercolor{block title alerted}{bg=tud Orange, fg=white}
+\setbeamercolor{block body alerted}{bg=tud OrangePale, fg=black}
+\setbeamercolor{block title example}{bg=tud ForestGreen, fg=white}
+\setbeamercolor{block body example}{bg=tud ForestGreenPale, fg=black}
