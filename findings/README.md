@@ -16,6 +16,8 @@ branches.
 >   config matrix, every inconsistency ranked, and a **pre-deadline action list** per WP.
 > - 📊 [**mann-whitney-explained.md**](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/mann-whitney-explained.md) — plain-English guide to the
 >   p-values / A12 / CIs we report (we all have to present these to Arthur).
+> - 🧠 [**WP5-how-it-works.md**](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/WP5-how-it-works.md) — big-picture, figure-by-figure
+>   walkthrough of the gradient + EA hybrid (what a "polish" is, how the two searches loop together).
 
 ## The assignment, in one line
 
@@ -43,9 +45,9 @@ The TA meeting laid out several fronts; we split them into work packages:
 |---|---|---|---|
 | **WP1** | Does Latin-hypercube init help? | **No** — stratification ≈ plain uniform. Real WP1 value = bug fixes + the stats framework. | LHS: ns (honest null) |
 | **WP2** | `(μ,λ)` vs `(μ+λ)`? Archive? | **Strategy-dependent:** tied on single-σ, **comma wins big on multi-σ** (plus 2× worse). Archive = "mostly bookkeeping" (no gain), reintroduction ≈ no help. | ⚠️ p-values pending (4 seeds) |
-| **WP3** | Better out-of-bounds repair? | **clip & reflect crush random at n≥10** (3–4× smaller gap, A12 up to 1.0). clip ≈ reflect; clip simplest. | ✓ *** at n≥10 |
+| **WP3** | Better out-of-bounds repair? | **clip wins at EVERY n** (≈4× smaller gap at n≥15, A12 up to 1.0); reflect wins at n≥10. clip simplest → the pick. *(25-seed final, merged)* | ✓ clip ** n=7, *** n≥10 |
 | **WP4** | Which σ-strategy? Does recombination help? | **Single-variance wins at every n** (grounds the team baseline); **naive recombination hurts ~10×** (CiaS permutation symmetry). | ✓ σ: *** ; recomb: *** (worse) |
-| **WP5** | Does a gradient local-polish hybrid beat pure EA? | **No significant gain** — and we know *why*: the polish optimises the **non-smooth** min-distance (flat gradient) instead of a surrogate → near-no-op. Also ran on a **stale full-variance baseline** (rerun needed). | ⚠️ ns (explained) |
+| **WP5** | Does a gradient local-polish hybrid beat pure EA? | **Yes — interleaved polish wins big at large n** (gap 62%→29% at n=15, 64%→47% at n=20). Final polish ≈ no help (flat gradient at a converged point); neither helps small n. *(25-seed, merged)* | ✓ interleaved ** at n≥15 |
 
 ## The shared baseline everything is measured against
 
@@ -63,13 +65,14 @@ The full, ranked version is in [AUDIT-inconsistencies.md](courses/CS4205-evoluti
   is clean; we just need one agreed (25 seeds, 100k, n∈{7,10,15,20}) sweep per WP.
 - **WP2 needs a rerun on the shared baseline** (it used 300k evals / 4 seeds / n=5 / no p-values)
   before its numbers are final.
-- **WP3 should bump 10 → 25 seeds** for tight CIs (direction is already clear); and **reproduce**
-  the "25 seeds breaks single-variance" report before stating it as fact.
+- ✅ **WP3 done + merged** — 25-seed single-variance run on `main`; clip significant at every n; the
+  "25 seeds breaks single-variance" worry did not reproduce.
 - **WP4's "single is best" holds in the data we have** (σ-ablation, all n) — but at a **~20k
   early-stop budget**; a 100k confirmation is pending. So say "single is the *parsimonious* choice
   and wins in our runs," not "single is provably optimal at any budget." The baseline is a
   **neutral reference**, chosen for simplicity.
-- **WP5 (Martin)** ran on a **stale full-variance baseline** (explains the n=10 0.44-vs-0.13 anomaly)
-  and its polish lacks the smooth surrogate it needs → rerun on single-variance + add the surrogate.
+- ✅ **WP5 done + merged** — re-run on the correct single+random baseline (25 seeds): **interleaved
+  polish significantly helps n≥15**; final polish doesn't (flat gradient at a converged point). The old
+  "stale full-variance baseline" anomaly is gone. Optional future work: a smooth soft-min surrogate.
 - Every figure here is regenerated from real run data by `make_findings_figs.py` (data in `data/`,
   plots in `figs/`); budgets/seeds differ per WP and are annotated on each plot.

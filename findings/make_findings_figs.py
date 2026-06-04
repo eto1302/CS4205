@@ -100,8 +100,8 @@ def wp3():
         ax.bar(x + (i-1)*w, vals, w, color=color[tr], label=label[tr])
     ax.set_xticks(x); ax.set_xticklabels([f"n={n}" for n in ns])
     ax.set_ylabel("median gap to optimum (%)")
-    ax.set_title("WP3 · Repair: clip & reflect crush random at large n\n"
-                 "single-variance baseline, 10 seeds, 100k evals  (lower = better)")
+    ax.set_title("WP3 · Repair: clip & reflect crush random; clip wins even at n=7\n"
+                 "single-variance baseline, 25 seeds, 100k evals  (lower = better)")
     ax.legend()
     fig.tight_layout(); fig.savefig(f"{FIGS}/wp3_repair.png", bbox_inches="tight"); plt.close(fig)
     print("wp3_repair.png")
@@ -232,39 +232,63 @@ def mw_hist():
 
 # ── WP5 (Martin): gradient local-search hybrid ──────────────────────────────
 def wp5_results():
-    """Bars: baseline vs final/interleaved polish (n=7,10) — all ns. Martin's chat data."""
-    rows = read(f"{DATA}/wp5_martin_chat.csv")
-    ns = [7, 10]
-    # base_median is the same for all arms at a given n
-    base = {n: float(next(r["base_median"] for r in rows if int(r["n_circles"]) == n)) for n in ns}
-    arms = [("baseline", C["baseline"], "pure EA (baseline)", None),
-            ("B+final_polish", C["blue"], "EA + final polish", "B+final_polish"),
-            ("B+interleaved_polish", C["orange"], "EA + interleaved polish", "B+interleaved_polish")]
+    """Bars + forest: baseline vs final/interleaved polish across n — REAL 25-seed merged run."""
+    runs = read(f"{DATA}/wp5_per_run.csv")
+    comp = [r for r in read(f"{DATA}/wp5_comparisons.csv")
+            if r["metric"] == "final_gap" and r["treatment"].startswith("B+")]
+    ns = sorted({int(r["n_circles"]) for r in runs})
+    arms = [("baseline", C["baseline"], "pure EA (baseline)"),
+            ("B+final_polish", C["blue"], "EA + final polish"),
+            ("B+interleaved_polish", C["orange"], "EA + interleaved polish")]
 
-    def arm_med(tr, n):
-        return float(next(r["arm_median"] for r in rows if r["treatment"] == tr and int(r["n_circles"]) == n))
+    def med(tr, n):
+        return median([r["final_gap"] for r in runs if r["treatment"] == tr and int(r["n_circles"]) == n])
 
-    def stat(tr, n):
-        r = next(rr for rr in rows if rr["treatment"] == tr and int(rr["n_circles"]) == n)
-        return r["a12"], r["p_value"]
+    def cstat(tr, n):
+        r = next((rr for rr in comp if rr["treatment"] == tr and int(rr["n_circles"]) == n), None)
+        return (r["marker"], r["a12"]) if r else ("", "")
 
+    # (a) grouped bars with marker/A12 annotations
     x = np.arange(len(ns)); w = 0.27
-    fig, ax = plt.subplots(figsize=(8.5, 4.8))
-    for i, (tr, col, lbl, key) in enumerate(arms):
-        vals = [100*base[n] if key is None else 100*arm_med(tr, n) for n in ns]
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    for i, (tr, col, lbl) in enumerate(arms):
+        vals = [100*med(tr, n) for n in ns]
         ax.bar(x + (i-1)*w, vals, w, color=col, label=lbl)
-        if key:
-            for xi, n in zip(x + (i-1)*w, ns):
-                a12, p = stat(tr, n)
-                ax.annotate(f"ns\nA12={a12}", (xi, 100*arm_med(tr, n)), textcoords="offset points",
+        if tr != "baseline":
+            for xi, n, v in zip(x + (i-1)*w, ns, vals):
+                mk, a12 = cstat(tr, n)
+                ax.annotate(f"{mk}\nA12={a12}", (xi, v), textcoords="offset points",
                             xytext=(0, 2), ha="center", fontsize=7, color=C["grey"])
     ax.set_xticks(x); ax.set_xticklabels([f"n={n}" for n in ns])
     ax.set_ylabel("median gap to optimum (%)")
-    ax.set_title("WP5 · Gradient polish gives NO significant gain (all ns, 25 seeds)\n"
-                 "⚠ on a STALE full-variance baseline — n=10 baseline 44% ≠ the single-variance 13% (must rerun)")
+    n_sig = sum(1 for r in comp if r["marker"] != "ns")
+    verdict = "NO significant gain at any n" if n_sig == 0 else f"significant at {n_sig}/{len(comp)} cells"
+    ax.set_title(f"WP5 · Gradient polish vs pure EA — {verdict}\n"
+                 "single-variance + random baseline, 25 seeds, 100k evals  (lower = better)")
     ax.legend(fontsize=8)
     fig.tight_layout(); fig.savefig(f"{FIGS}/wp5_results.png", bbox_inches="tight"); plt.close(fig)
     print("wp5_results.png")
+
+    # (b) forest of polish effect vs baseline (CI + sig)
+    comp.sort(key=lambda r: (r["treatment"], int(r["n_circles"])))
+    fig, ax = plt.subplots(figsize=(8, 0.5*len(comp)+1.6))
+    ys = list(range(len(comp)))[::-1]
+    for y, r in zip(ys, comp):
+        eff, lo, hi = float(r["effect"]), float(r["ci_lo"]), float(r["ci_hi"])
+        sig = r["marker"] != "ns"
+        col = C["blue"] if "final" in r["treatment"] else C["orange"]
+        ax.plot([lo, hi], [y, y], color=col, lw=2, alpha=.8)
+        ax.scatter([eff], [y], s=90, zorder=3, edgecolor="black",
+                   facecolor=col if sig else "white")
+        ax.annotate(f"{r['marker']}  A12={r['a12']}", (max(hi, 0), y), textcoords="offset points",
+                    xytext=(8, 0), va="center", fontsize=8, color="#222" if sig else C["grey"])
+    ax.axvline(0, color="black", lw=1.2)
+    ax.set_yticks(ys)
+    ax.set_yticklabels([f"{r['treatment'].replace('B+','').replace('_',' ')} (n={r['n_circles']})" for r in comp])
+    ax.set_xlabel("improvement in gap vs pure-EA baseline  (right = better) + bootstrap 95% CI")
+    ax.set_title("WP5 · polish effect vs baseline  (filled = significant p<0.05)")
+    fig.tight_layout(); fig.savefig(f"{FIGS}/wp5_forest.png", bbox_inches="tight"); plt.close(fig)
+    print("wp5_forest.png")
 
 
 def wp5_why_flat():

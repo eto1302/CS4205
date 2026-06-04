@@ -2,7 +2,7 @@
 title: "WP3 — Constraint Handling / Repair (Cala)"
 subtitle: "Findings guide · random vs clip vs reflect repair of out-of-bounds circles"
 owner: "Cala · branch `constraint_handling-improvements`"
-status: "findings summary (Leo, 2026-06-02) from Cala's single-variance 10-seed run. Local working notes."
+status: "findings summary (Leo, updated 2026-06-04) from Cala's FINAL 25-seed single-variance run (merged to main). Local working notes."
 ---
 
 # WP3 — Constraint Handling (repair)
@@ -24,26 +24,32 @@ that with two better repairs and measures them.
 | **clip** | clamp to the nearest wall (0 or 1) — keeps direction, lands on the boundary |
 | **reflect** | bounce back in by the overshoot — keeps direction *and* magnitude |
 
-## Finding — clip & reflect **crush** random repair at large n
+## Finding — clip & reflect **crush** random repair; clip wins at *every* n
+
+*(Final numbers: 25 seeds, single-variance + random baseline, 100k evals — the run that's now on `main`.)*
 
 ![repair bars](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/figs/wp3_repair.png)
 
 | n | random (baseline) | clip | reflect |
 |---|---|---|---|
-| 7 | 3.7% | 3.3% (ns) | 4.6% (ns) |
-| 10 | 15.3% | **5.4%** ✲ | **7.8%** ✲ |
-| 15 | 57.2% | **15.0%** ✲ | **17.2%** ✲ |
-| 20 | 64.4% | **17.6%** ✲ | **20.5%** ✲ |
+| 7 | 5.2% | **2.9%** ** | 4.2% (ns) |
+| 10 | 13.4% | **6.3%** *** | **8.5%** *** |
+| 15 | 61.9% | **14.8%** *** | **17.2%** *** |
+| 20 | 64.2% | **17.5%** *** | **22.6%** *** |
 
 ![repair forest](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/figs/wp3_forest.png)
 
-- At **n ≥ 10 both clip and reflect are highly significant** (forest: filled dots,
-  A12 up to **1.0** = won every single pairwise comparison; p down to 1.8e-4).
-- The effect is **huge**: at n=15/20 they cut the gap from ~57–64% to ~15–20%
-  (3–4× better).
-- At **n=7 neither is significant** — that instance is already nearly solved, so
-  there's little room to improve (a ceiling effect, not a failure).
-- **clip ≈ reflect**, with clip slightly ahead at the largest n.
+- **clip is significant at EVERY n** — `**` at n=7 (A12 0.76) and `***` at n≥10, up to
+  **A12 = 1.0** at n=20 (clip won every single pairwise comparison; p down to 1.4e-9).
+- **reflect is significant at n ≥ 10** (`***`) but **not at n=7** (A12 0.63, p=0.13).
+- The effect is **huge** at scale: at n=15/20 clip cuts the gap from ~62–64% to ~15–18%
+  (**~4× better**).
+- **clip beats reflect everywhere** — clearest at n=7, where clip's small edge is real but
+  reflect's isn't. → **clip is the recommended default** (simplest too: one `np.clip`).
+
+> 📈 **What changed at 25 seeds:** the earlier 10-seed run called n=7 "not significant for
+> either." With the full 25 seeds, **clip's small n=7 win becomes detectable** (`**`) — a power
+> effect, exactly the reason we standardised on 25 seeds. reflect at n=7 stays ns.
 
 **Why it works on CiaS (the justification):** optimal packings put circle centres
 **on the boundary**. Random repair teleports a circle that nudged past the wall to
@@ -59,20 +65,19 @@ of being silently baked in. (Reflection used to be hardcoded into single-varianc
 that hid its benefit. Now it's credited to WP3, with numbers.) Baseline used here
 = single-variance + LHS + (μ,λ) + random repair = the current `main` baseline. ✓
 
-## ⚠️ Caveats
+## ✅ Status — all earlier caveats resolved
 
-- **10 seeds** (not the framework's 25) — directional findings are clear (A12≈1.0)
-  but CIs are wide; bump to 25 for the final numbers.
-- n=7 not significant (near-solved) — present clip/reflect as a **large-n** win.
-- An earlier full-variance run showed clip even larger and reflect weaker at large
-  n; on the current single-variance baseline **clip ≈ reflect**. Recommend clip as
-  the default (simplest: one `np.clip`, significant everywhere it matters).
-- Her `ofat_benchmark.py` still pins the **stale `FULL_VARIANCE` BASELINE** (drop that line);
-  and her "**25 seeds breaks single-variance**" report is **open / not yet root-caused** —
-  reproduce it before claiming it's a bug.
+This WP is **done and defense-ready**:
+- **25 seeds** on the shared single-variance + random baseline (was 10) — CIs are now tight,
+  p-values down to 1e-9. ✓
+- The stale `FULL_VARIANCE` BASELINE line is **fixed** (single-variance) and the run is **merged
+  to `main`**. ✓
+- The earlier "**25 seeds breaks single-variance**" worry **did not reproduce** in the final run —
+  it ran cleanly at 25 seeds. ✓
 
-> ⚠️ See [AUDIT-inconsistencies.md](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/AUDIT-inconsistencies.md) (items 3, 4, 8) for WP3's row in the
-> config matrix and pre-deadline action table.
+Only judgement call left: **clip vs reflect as the headline.** Both are large and significant at
+n≥10; clip additionally wins at n=7 and is the simplest (`np.clip`), so **lead with clip**, mention
+reflect as the close runner-up.
 
 ## How it maps to the assignment
 

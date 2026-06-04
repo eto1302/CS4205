@@ -1,5 +1,0 @@
-treatment,n_circles,base_median,arm_median,effect,a12,p_value,marker,note
-B+final_polish,7,0.060516,0.060510,0.000005,0.527,0.749,ns,FULL_VARIANCE baseline (stale); 25 seeds; 100k evals
-B+final_polish,10,0.437623,0.391814,0.045809,0.566,0.426,ns,FULL_VARIANCE baseline (stale); 25 seeds; 100k evals
-B+interleaved_polish,7,0.060516,0.053387,0.007129,0.635,0.103,ns,FULL_VARIANCE baseline (stale); 25 seeds; 100k evals
-B+interleaved_polish,10,0.437623,0.269252,0.168371,0.523,0.786,ns,FULL_VARIANCE baseline (stale); 25 seeds; 100k evals

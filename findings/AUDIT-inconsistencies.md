@@ -9,12 +9,10 @@ status: "Leo's local working notes (groupwork-notes/, NOT the team repo). 2026-0
 I swept every pushed branch (`git show origin/<branch>:…`, read-only) and cross-checked
 each work package against the **shared OFAT baseline** on `main`. Headline:
 
-> **The code is clean. The *experiments* are not yet apples-to-apples.**
-> No logic bugs were found in anyone's new code. The problems are all
-> **experiment-configuration drift** — different seed counts, eval budgets, σ-strategies
-> and baselines — plus **WP5 sitting on a stale full-variance baseline** and missing the smooth
-> surrogate its design needs. None of this is fatal; it's a half-day of re-running on one agreed
-> configuration before the 06-07 hand-in.
+> **The code is clean; most experiments are now aligned.** No logic bugs were found in anyone's new
+> code. **WP1, WP3 and WP5 are merged to `main` and measured at 25 seeds / 100k / n=7-20.** The
+> remaining drift is **WP2 (Ivan)** and **WP4 (Agata)** — still on fewer seeds / non-shared budgets and
+> needing one pass through the shared pipeline. Not fatal; a short re-run before the 06-07 hand-in.
 
 The shared baseline (on `main`, commit `3fa67f7`):
 
@@ -28,9 +26,9 @@ The shared baseline (on `main`, commit `3fa67f7`):
 |----|-------|--------|------------------------|--------|------:|------------:|----------|:---:|:---:|
 | **WP1** | Leo | `bugfix/ta-handoff` → **merged to main** | **single** ✓ | random ✓ | **25** | **100k** | 7/10/15/20 | ✅ yes | ✅ |
 | **WP2** | Ivan | `selection-elitism` | OFAT pins **FULL** 🔴; factorial ran single | n/a | **4** | 50k & **300k** | **n=5 only** | ❌ no (factorial, no MW) | ✅ |
-| **WP3** | Cala | `constraint_handling-improvements` | OFAT pins **FULL** 🔴; committed runs per-strategy | random→clip/reflect | **10** | 100k ✓ | 7/10/15/20 | ✅ yes (per strategy) | ✅ |
+| **WP3** | Cala | **merged to main** ✅ | single ✓ (fixed) | random→clip/reflect | **25** ✓ | 100k ✓ | 7/10/15/20 ✓ | ✅ yes | ✅ merged |
 | **WP4** | Agata | `recombination-agata` | OFAT pins **single** ✓; σ-ablation refs **FULL** | random | **10** | **~20k (early stop)** | 7/10/15/20 (σ), **7/10 only** (recomb) | ✅ yes (medium) | ✅ |
-| **WP5** | Martin | `martin` | OFAT pins **FULL** 🔴 + **2 commits behind main** | random (full path) | **25** | **100k** | **7/10 only** | partial (his own) | ✅ (2026-06-03) |
+| **WP5** | Martin | **merged to main** ✅ | single + random ✓ | random | **25** ✓ | **100k** ✓ | 7/10/15/20 ✓ | ✅ yes | ✅ merged |
 
 "OFAT pins FULL" = the `BASELINE` dict in that branch's `ofat_benchmark.py` still says
 `strategy=Strategy.FULL_VARIANCE` (the value before the 2026-06-01 switch). It does **not**
@@ -42,32 +40,26 @@ separately — but it means a naive `uv run ofat_benchmark.py` on their branch r
 
 ## 2. Ranked inconsistency list
 
-### 🔴 Critical (block a clean final story)
+### ✅ Resolved (were critical)
 
-1. **WP5 ran on a stale FULL_VARIANCE baseline + 2 commits behind main** (branch `martin`,
-   pushed 2026-06-03). His `ofat_benchmark.py:61` still pins `FULL_VARIANCE`, and the branch forks
-   at `85115f0` — *before* the single-variance switch (`723639d`) and random-repair switch
-   (`3fa67f7`). So his entire WP5 comparison sits on the wrong baseline. **→ rebase onto `main`,
-   set `BASELINE=SINGLE_VARIANCE`, rerun.** (His polish code itself is sound — see point below.)
-
-2. **The n=10 baseline anomaly — RESOLVED.** Martin's baseline n=10 = **0.4376** vs the
-   single-variance **0.1338**: the cause is item 1 (his baseline is **full-variance**). At 100k,
-   full-variance has ≈ n+n(n−1)/2 params to adapt — OK at n=7 (28 → 6%), far from converged at
-   n=10 (55 → 44%). Not a polish artefact; the wrong baseline. ✅ explained. (See
+1. **WP5 — merged + measured on the correct baseline.** Martin's branch (which had a stale
+   FULL_VARIANCE baseline + reflect repair, forked at `85115f0`) is now **merged to `main`** with the
+   single+random baseline. Re-run at 25 seeds / 100k / n=7-20: **interleaved polish significantly
+   improves n≥15** (62%→29% at n=15, `**`); final polish doesn't. The old "n=10 = 44%" baseline
+   anomaly was purely the stale full-variance baseline — **gone**. (See
    [WP5-martin.md](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/WP5-martin.md).)
 
-3. **Stale `FULL_VARIANCE` baseline in THREE branches** (`selection-elitism`,
-   `constraint_handling-improvements`, **`martin`**). Harmless to per-strategy committed results,
-   but their OFAT entry point disagrees with `main`. **→ one-line fix** on each:
+### 🔴 Still open
+
+3. **Stale `FULL_VARIANCE` baseline still in `selection-elitism` (Ivan)** — the last branch not yet
+   updated. (Cala + Martin are merged on single+random.) **→ Ivan: one-line fix**
    `Strategy.FULL_VARIANCE → Strategy.SINGLE_VARIANCE`, then rerun.
 
 ### 🟡 Medium (must standardise before final numbers)
 
-4. **Seed counts are all over the place: 25 (Leo, Martin) vs 10 (Cala, Agata) vs 4 (Ivan).**
-   p-values and CIs are only comparable at a fixed seed count. **Decision needed: pick ONE.**
-   Recommendation: **25** — single-variance is cheap now, and 10 seeds gave wide CIs / the
-   "insufficient data" speed-metric problem Martin hit. (This is exactly the "10 vs 25" split
-   Leo flagged.)
+4. **Seed counts: standardising on 25. Done: Leo, Martin, ~~Cala~~ (now 25 ✓, merged). Still at
+   10: Agata. At 4: Ivan.** p-values/CIs are only comparable at a fixed seed count → **Agata and
+   Ivan still need to rerun at 25.** (This was the "10 vs 25" split Leo flagged; Cala is now fixed.)
 
 5. **Eval budgets differ: 100k (standard) vs ~20k (Agata's "medium" runs, *early-stopped*) vs
    50k/300k (Ivan).** Agata's "recombination is ~10× worse" and her σ-ablation are at **~20k**,
@@ -84,12 +76,9 @@ separately — but it means a naive `uv run ofat_benchmark.py` on their branch r
    signal); Martin and Agata-medium are **n=7/10 only**. The interesting regime is **n≥15**
    (where gaps and effects are large). Final runs should all cover **7/10/15/20**.
 
-8. **Cala's "25 seeds break single-variance" — OPEN, not yet root-caused.** She reported the
-   single-variance result changes/degrades when she bumps 10→25 seeds. The sweep found **no
-   code-level seed bug** (no hardcoded seed list, no seed-count-dependent buffer). This is an
-   *unexplained* report, not a confirmed bug — **needs a reproduce** (run her branch at 10 and
-   25 seeds, diff the per_run.csv) before we either fix it or dismiss it. Do **not** state it as
-   fact in the report.
+8. **Cala's "25 seeds break single-variance" — RESOLVED.** ✅ Her final 25-seed single-variance
+   run completed cleanly and is merged to `main`; the earlier worry **did not reproduce**. (As
+   suspected, there was no code-level seed bug.)
 
 ### 🟢 Minor / by-design (note, don't necessarily fix)
 
@@ -110,10 +99,10 @@ separately — but it means a naive `uv run ofat_benchmark.py` on their branch r
   explicitly; it was **never implemented**. Her negative result is a verdict on *coordinate*
   recombination (positions), **not** on *strategy-parameter* recombination. Worth saying out
   loud so it doesn't look like we ignored his suggestion.
-- **WP5's smooth surrogate** — the spec required L-BFGS-B to polish a *soft-min* surrogate (the
-  min-distance objective is non-smooth); Martin polishes the **raw** objective, which is flat in
-  almost every direction → the polish is a near-no-op. **Not implemented yet** → the current "no
-  gain" is "no gain from a no-op," a weaker claim than we can make once the surrogate is added.
+- **WP5's smooth surrogate (optional future work, not a blocker).** Martin polishes the **raw**
+  min-distance (non-smooth → flat at converged points), which is why **`final` polish doesn't help**.
+  `interleaved` polish already gives a significant large-n win without it; a soft-min surrogate is the
+  clean "future work" line that would likely rescue `final` polish too.
 - **Elitist-archive reintroduction** (WP2) was only exercised on multiple-variance, 4 seeds,
   300k — too thin to claim anything beyond "no help here."
 - **WP2 & WP4 OFAT+stats reruns** on B (item 6) — the single biggest "make it defense-ready" task.
@@ -127,9 +116,9 @@ separately — but it means a naive `uv run ofat_benchmark.py` on their branch r
 |----|-------|------------------------------|--------|
 | **WP1** | Leo | Done (merged). Maybe re-emit forest at the agreed seed/budget if those change. | ~0 |
 | **WP2** | Ivan | Fix `BASELINE → SINGLE_VARIANCE`; run the **two headline arms** (B+plus, B+archive) through `ofat_benchmark.py → stats.py` at **25 seeds, 100k, n=7/10/15/20** to get real p-values + A12. | ~1 run |
-| **WP3** | Cala | Drop the stale `FULL_VARIANCE` BASELINE line; **rerun single-variance at 25 seeds** (currently 10); **reproduce the "25-seed breaks single" report** and report what it actually is. | ~1 run + debug |
+| **WP3** | Cala | ✅ **Done + merged.** 25-seed single-variance run on `main`; baseline fixed; clip significant at every n. Nothing outstanding. | ~0 |
 | **WP4** | Agata | **100k confirmation** of σ-ablation + recomb at **25 seeds, n=7/10/15/20**; relabel the σ-ablation reference; (optional/Arthur) prototype **recombine-best-σ**. | ~1–2 runs |
-| **WP5** | Martin | **Rebase onto `main`** + set `BASELINE=SINGLE_VARIANCE` (fixes the n=10 anomaly); **add the soft-min surrogate** for the gradient step (without it the polish is a no-op); extend to **n=15/20**; rerun. | rebase + 1 feature + run |
+| **WP5** | Martin | ✅ **Done + merged.** 25-seed run on `main`; interleaved polish significant at n≥15. Optional future work: smooth soft-min surrogate (could rescue `final` polish too). | ~0 |
 
 **Cross-cutting (team decision at the Friday TA meeting):** lock the **(seeds=25, budget=100k,
 n∈{7,10,15,20})** triple for *all* final runs so every forest plot is comparable.

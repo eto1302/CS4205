@@ -9,7 +9,7 @@ status: "Leo's local working notes. 2026-06-03. For the team (we all have to pre
 Arthur asked for **"p-values almost everywhere."** Every forest dot in the WP guides comes from
 one little pipeline (`stats.py`). This page explains, in plain language, **exactly what those
 three numbers mean** so we can present them confidently. It's the short, results-focused version
-of the fuller [`../statistics-guide/`](courses/CS4205-evolutionary-algorithms/assignments/groupwork-notes/statistics-guide/statistics-guide.md) (which builds
+of the fuller [`../statistics-guide/`](../../groupwork-notes/statistics-guide/statistics-guide.md) (which builds
 p-values from scratch with figures).
 
 There are only **three numbers** per comparison. That's it:

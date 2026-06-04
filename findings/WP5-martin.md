@@ -1,120 +1,122 @@
 ---
 title: "WP5 — Gradient + EA hybrid (Martin)"
 subtitle: "Findings guide · the 'big' change: EA for global search + L-BFGS-B local polish"
-owner: "Martin · branch `martin` (pushed 2026-06-03)"
-status: "findings summary (Leo, 2026-06-03) from Martin's pushed code + his WhatsApp OFAT table. Local working notes."
+owner: "Martin · branch `martin` (merged to main 2026-06-04)"
+status: "findings summary (Leo, updated 2026-06-04) from the canonical 25-seed run on the MERGED code. Local working notes."
 ---
 
 # WP5 — Gradient + EA hybrid
+
+> 🆕 **New to the idea?** Read [WP5-how-it-works.md](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/WP5-how-it-works.md)
+> first — a plain-English, figure-by-figure walkthrough of what a "polish" is and how the EA + gradient
+> loop together. *This* page is the results + code audit.
 
 ## What Arthur asked for (TA meeting, 2026-05-27)
 
 > The **"big" change:** a **gradient + EA hybrid loop** — the EA does the broad/global search,
 > a gradient-based local optimiser does the fine/local polish.
 
-This is the ambitious "memetic" idea: keep the EA's global exploration, but bolt on a classical
-local optimiser to squeeze out the last bit of precision the EA is slow at.
+The ambitious "memetic" idea: keep the EA's global exploration, but bolt on a classical local
+optimiser to squeeze out the precision the EA is slow at.
 
-## What Martin built (code audit — it works, with one important omission)
+## What Martin built (code audit — it works)
 
-On branch `martin`, in `ES/evopy/evopy.py`:
+In `ES/evopy/evopy.py` (now merged to `main`):
 
 - A `local_search` kwarg: `"none"` (default), `"final"` (one L-BFGS-B polish after the EA loop), or
   `"interleaved"` (polish the current best every `local_search_k` generations). Wired as two OFAT
-  treatments — `B+final_polish`, `B+interleaved_polish` (`ofat_benchmark.py:76–77`).
-- `_lbfgsb_polish()` (`evopy.py:181–200`): runs `scipy.optimize.minimize(method="L-BFGS-B")` from
-  the EA's best, with the box bounds `[(0,1)]·2n`.
-- ✅ **Budget accounting is fair:** every objective call inside the polish does `self.evaluations += 1`
-  and `maxfun` is capped at the *remaining* budget — so gradient evals are charged to the same
-  100k as the EA (exactly what the spec demanded). The maximize/minimize sign handling is correct.
+  treatments — `B+final_polish`, `B+interleaved_polish`.
+- `_lbfgsb_polish()`: `scipy.optimize.minimize(method="L-BFGS-B")` from the EA's best, bounded to
+  `[(0,1)]·2n`.
+- ✅ **Budget accounting is fair:** every objective call inside the polish increments
+  `self.evaluations` and `maxfun` is capped at the *remaining* budget — gradient evals are charged to
+  the same 100k as the EA (exactly what the spec demanded). Sign handling is correct.
+- It polishes the **raw** min-distance objective (no smooth surrogate). That turns out to matter a
+  lot for *which* polish mode works — see Finding 2.
 
-**The one omission (and it's the whole story):** the polish optimises the **raw** fitness function
-— the true `min` pairwise distance — **not a smooth surrogate.** The spec
-(`../wp5-gradient-hybrid.md`) explicitly called for a **soft-min surrogate** for the gradient step,
-*because* the min-distance objective is non-smooth. Skipping it is why the hybrid does nothing —
-see Finding 2.
+The numbers below are the **canonical run on the final merged code**: single-variance + random
+baseline, **25 seeds, 100k evals, n = 7/10/15/20** (`data/wp5_per_run.csv`,
+`data/wp5_comparisons.csv`). *(The earlier "no gain" reading came from Martin's pre-merge branch,
+which ran on a **stale full-variance baseline** — that's why his n=10 baseline was 44% instead of
+13%. On the correct baseline the picture is different and better.)*
 
 ---
 
-## Finding 1 — No significant gain (but on the WRONG baseline)
+## Finding 1 — Interleaved polish is a **real, large win at big n** ✅
 
 ![wp5 results](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/figs/wp5_results.png)
 
-Martin's OFAT sweep (4 treatments × n∈{7,10} × **25 seeds**, 100k evals; his WhatsApp paste,
-`data/wp5_martin_chat.csv`):
+| n | pure EA | + final polish | + interleaved polish |
+|---|---|---|---|
+| 7  | 5.2%  | 5.2% (ns) | 5.0% (ns) |
+| 10 | 13.4% | 13.4% (ns) | 13.4% (ns) |
+| 15 | 61.9% | 57.9% (ns) | **28.9%** ✲✲ (A12 0.73, p=0.005) |
+| 20 | 64.2% | 62.3% (✲, marginal) | **47.3%** ✲✲ (A12 0.74, p=0.003) |
 
-| treatment | n | baseline gap | arm gap | A12 | p | verdict |
-|---|---|---|---|---|---|---|
-| final polish | 7 | 6.05% | 6.05% | 0.527 | 0.75 | ns |
-| final polish | 10 | 43.8% | 39.2% | 0.566 | 0.43 | ns |
-| interleaved | 7 | 6.05% | 5.34% | 0.635 | 0.10 | ns |
-| interleaved | 10 | 43.8% | 26.9% | 0.523 | 0.79 | ns |
+![wp5 forest](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/figs/wp5_forest.png)
 
-- **Nothing is significant** at 25 seeds — the polish doesn't reliably beat pure EA.
-- **Read the interleaved n=10 row carefully:** the *median* drops a lot (43.8% → 26.9%) but
-  **A12 = 0.52, p = 0.79** → it is **not** a consistent win (a couple of lucky polishes moved the
-  median; most runs didn't budge). This is the textbook reason we report A12 + p, not just medians
-  — see [mann-whitney-explained.md](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/mann-whitney-explained.md).
+- **Interleaved polish significantly improves the large-n regime:** it roughly **halves the gap at
+  n=15 (62% → 29%)** and cuts it hard at **n=20 (64% → 47%)**, both `**` (p < 0.01, A12 ≈ 0.73–0.74).
+- **Final polish barely moves anything** — `ns` everywhere except a marginal `*` at n=20.
+- **Neither helps at n=7/10** — those instances already converge well within budget, so there's no
+  room for a polish to add.
 
-### 🔴 The n=10 baseline anomaly — RESOLVED
-
-Martin's baseline gap at n=10 is **43.8%**, but the team's single-variance baseline is **13.4%**
-(`data/wp1_per_run.csv`). Cause found in his code:
-
-- **His `ofat_benchmark.py` (line 61) pins `BASELINE = Strategy.FULL_VARIANCE`** — the *stale*
-  baseline, never switched to single (same drift as WP2/WP3).
-- **His branch is 2 commits behind `main`:** it forks at `85115f0`, *before* the single-variance
-  switch (`723639d`) and the random-repair switch (`3fa67f7`).
-
-So Martin benchmarked his polish on a **full-variance** baseline. At 100k evals, full-variance has
-≈ n + n(n−1)/2 strategy parameters to self-adapt — fine at n=7 (28 params → 6% gap) but **far from
-converged at n=10** (55 params → 44% gap). That *entirely* explains the 0.44-vs-0.13 gap; it's not
-a polish artefact, it's the wrong baseline. **Fix: rebase onto `main` and rerun on single-variance.**
+The hybrid helps **exactly where the EA struggles most** (large n, where pure EA is stuck at 60%+).
+That's the memetic story working as intended — but, crucially, only the **interleaved** variant.
 
 ---
 
-## Finding 2 — *Why* the polish stalls: a non-smooth objective (the real insight)
+## Finding 2 — Why *interleaved* works but *final* doesn't (the real insight)
 
 ![why flat](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/figs/wp5_why_flat.png)
 
-CiaS fitness is the **minimum** over all pairwise distances. The minimum is set by **one binding
-pair** of circles. That has a brutal consequence for a gradient method:
+CiaS fitness is the **minimum** over all pairwise distances — set by **one binding pair**. Nudge any
+circle that *isn't* in that pair and the minimum doesn't change → the objective is **flat** in most
+directions → L-BFGS-B (finite-difference gradient) reads ~zero and takes almost no step. So:
 
-- Nudge **any circle that isn't in the binding pair** → the binding distance is unchanged → the
-  objective is **exactly flat** → its gradient is **zero**.
-- So out of all 2n coordinates, L-BFGS-B only "feels" the **2** belonging to the binding pair — and
-  the moment it separates them, a *different* pair becomes the new minimum (a kink, non-smooth).
+- **A `final` polish lands on the EA's converged best — a locally flat point** → it reads zero
+  gradient and does nothing (gap barely moves; at n=7 it changed by 0.000005). The figure shows it:
+  on the flat shelf the true objective (red) has no slope.
+- **At small n the EA is already converged**, so *any* polish hits the same flat wall → no gain.
+- **But `interleaved` polish fires mid-search at large n, where the EA is nowhere near converged**
+  (gap still ~60%, the packing is messy with *many* near-binding pairs). There the objective is
+  **not** flat — L-BFGS-B can iteratively push several crowded pairs apart, and because the improved
+  best is **reinjected into the population every K generations**, the gains compound and steer the
+  rest of the EA search. That feedback loop is why interleaved ≫ final at large n.
 
-L-BFGS-B estimates its gradient by finite differences. On this objective it mostly reads **zero**,
-concludes it's already at an optimum, and **takes essentially no step** — which is exactly what the
-data shows (`final_polish` at n=7 changed the gap by **0.000005**). The figure illustrates it: where
-the EA leaves the best (on a flat shelf), the **true** objective (red) has no slope, while a
-**smooth soft-min surrogate** (green) slopes downhill and *would* give L-BFGS-B a usable gradient.
+**Presentable takeaway:** *the hybrid pays off precisely when the EA hasn't converged (large n) and
+the local optimiser is applied repeatedly during search; a single end-of-run polish on the
+non-smooth objective is a near-no-op.* A genuine, well-explained EA result.
 
-**This is the presentable result:** *"A naive gradient polish on the raw min-distance objective is a
-near-no-op, because the objective is non-smooth and flat in almost every direction. To make a hybrid
-work you must polish a smooth surrogate (soft-min), as planned."* That's a genuine EA insight
-(non-smooth fitness ↔ memetic local search), not a failure.
+**Headroom (optional):** polishing a **smooth soft-min surrogate** (green dashed in the figure)
+instead of the raw min would give the gradient traction even at converged/flat points — likely
+rescuing `final` polish and squeezing more out of `interleaved`. Not implemented; a clean "future
+work" line.
 
 ---
 
-## ⚠️ Caveats / what must change before this is defense-ready
+## How it stacks up (honest context)
 
-1. **Wrong baseline (blocking):** rebase `martin` onto `main`; set `BASELINE = SINGLE_VARIANCE`;
-   confirm baseline n=10 ≈ **13%**, not 44%.
-2. **No smooth surrogate:** implement the soft-min objective for the *gradient step only* (the EA
-   keeps optimising the true min) — without it the hybrid can't help, so the current "no gain" is
-   really "no gain *from a no-op*," a weaker claim than we can make.
-3. **n-range:** extend to **n=15/20** (the regime where a precision polish would matter most).
-4. **Seeds:** 25 ✓ (already the team number — good).
+- Interleaved polish is a **legitimate, significant improvement** over pure EA at n≥15 — present it as
+  a positive WP5 result with p-values.
+- For raw large-n gap, **WP3's clip/reflect repair is still stronger** (n=20: clip 17.5% vs
+  interleaved-polish 47.3%) — but that's a *different lever* (constraint handling). The honest framing:
+  "the gradient hybrid helps the unconverged large-n regime; constraint repair helps more on this
+  particular problem, but the two are independent and could be combined."
+
+## ✅ Status — merged + measured
+
+- Branch `martin` **merged to `main`** (conflicts with Cala's `repair` resolved; baseline = single +
+  random; all 6 treatments live in `ofat_benchmark.py`).
+- Measured on the shared pipeline: **25 seeds, 100k, n=7/10/15/20**, real Mann–Whitney p-values + A12.
+- The old n=10 "44% baseline" anomaly is **gone** (it was the stale full-variance baseline).
 
 ## How it maps to the assignment
 
-WP5 is the headline "big change," and even as a negative it carries two real EA lessons: **memetic /
-hybrid search** (global EA + local optimiser) and the **non-smoothness of the CiaS objective** (why
-naive gradients don't apply, and what a surrogate fixes). With the baseline fixed and a surrogate
-added, it becomes either a justified improvement *or* a well-explained, significant negative — both
-satisfy Arthur's "justify the direction + show significance" rules.
+WP5 is the headline "big change," and it delivers a **justified, statistically significant** result:
+the memetic EA+gradient hybrid (interleaved) significantly improves the hard large-n instances, with
+a clear mechanism (it helps while the EA is still converging; a single final polish hits the
+non-smooth objective's flat wall). That satisfies Arthur's "justify the direction + show
+significance" — and the surrogate idea is a clean future-work hook.
 
-See [AUDIT-inconsistencies.md](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/AUDIT-inconsistencies.md) (items 1–3) for WP5's row in the config
-matrix and action table.
+See [AUDIT-inconsistencies.md](courses/CS4205-evolutionary-algorithms/assignments/groupwork/findings/AUDIT-inconsistencies.md) for WP5's row in the config matrix.
