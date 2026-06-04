@@ -79,7 +79,8 @@ TREATMENTS = [
     ("B-repair_clip",         "WP3", {"repair": "clip"}),         # Cala
     ("B-repair_reflect",         "WP3", {"repair": "reflect"}),         # Cala
     # ("B+recomb",       "WP4", {"recombine": True}),        # Agata
-    # ("B+final_polish", "WP5", {"local_search": "final"}),  # Martin
+    ("B+final_polish",       "WP5", {"local_search": "final"}),        # Martin
+    ("B+interleaved_polish", "WP5", {"local_search": "interleaved"}),  # Martin
 ]
 
 
@@ -94,7 +95,7 @@ def run_one(overrides, n_circles, seed):
 
     kwargs = dict(BASELINE)
     kwargs.update(overrides)
-    EvoPy(
+    result_genotype = EvoPy(
         fitness, n_circles * 2,
         reporter=reporter, maximize=True, bounds=(0, 1),
         generations=100000,                      # never the binding cap
@@ -105,7 +106,9 @@ def run_one(overrides, n_circles, seed):
 
     evals = np.array([e for e, _ in trace])
     best = np.array([b for _, b in trace])
-    final_best = float(best[-1])
+    # Evaluate the returned genotype: for "final" polish this captures the
+    # post-polish fitness that was never recorded by the reporter.
+    final_best = float(fitness(result_genotype)) if result_genotype is not None else float(best[-1])
 
     row = {
         "treatment": None, "wp": None, "n_circles": n_circles, "seed": seed,
