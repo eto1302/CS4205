@@ -4,19 +4,76 @@ import numpy as np
 from ES.evopy.strategy import Strategy
 from ES.evopy.utils import random_with_seed
 
+# Valid repair modes: kept as frozenset so the error message is always accurate
+_REPAIR_MODES_ = frozenset({"random", "clip", "reflect"})
 
-def reflect_into_bounds(x, low, high):
-    """Reflect values in ``x`` into the box [low, high] using a tent map.
+def _repair(genotype: np.ndarray, lo: float, hi: float,
+            mode: str, rng) -> np.ndarray:
+    """Return a copy of 'genotype' with all alleles brought back into [lo, hi].
 
-    Preserves the magnitude of the intended mutation step instead of
-    discarding it (which random-resample does).
+    Parameters
+    -------------
+    genotype: np.ndarray
+        The raw (possibly out-of-bounds) offspring genotype.
+    lo, hi: float
+        Lower and upper bounds of the box.
+    mode: str
+        One of "random", "clip", or "reflect".
+    rng: numpy RandomState
+        Used only by "random"mode; ignored by the other two.
+
+    Mode explanations
+    ------------------
+    "random"
+    Original behaviour: replace each OOB (out of bounds) allele with an independent "uniform(lo, hi)" draw.
+    Discards both the direction and magnitude of the mutation step, acts as a random restart 
+    for that coordinate.
+
+    "clip"
+    Clamp to the nearest boundary (np.clip). Preserves the *direction* of the step. 
+    Magnitude is capped at the boundary distance (box).
+    May accumulate density at the boundary, not too dangerous for CiaS because many
+    optimal circle centres already lie close to the boundary.
+
+
+    "reflect"
+    Tent-map. An overshoot of +δ past the upper wall is brought back to (hi - δ), an 
+    overshoot of -δ past the lower wall lands at (lo + δ).
+    Handles arbitrarily large steps via "%(2*span)".
+    Preserves *both* direction and magnitude, no boundary density bias.
+    This is the theoretically preferred mode for CiaS because optimal packings concentrate near the boundary,
+    where the other two modes are more disruptive to self-adaptation.  
     """
-    range_ = high - low
-    if range_ <= 0:
-        return x
-    y = np.mod(x - low, 2.0 * range_)
-    y = np.where(y > range_, 2.0 * range_ - y, y)
-    return low + y
+
+    if mode == "clip":
+        return np.clip(genotype, lo, hi)
+    
+    if mode == "reflect":
+        span = hi - lo
+        v = (genotype - lo) % (2.0 * span) # shift values so the interval starts at 0, wraps into [0, 2span)
+        return np.where(v > span, 2.0 * span - v, v) + lo
+    
+    # mode == "random" (original, default)
+    oob = (genotype < lo) | (genotype > hi) #| - elementwise "or"
+    n_oob = int(np.count_nonzero(oob)) #count how many values are out of bounds within a genotype
+    if n_oob:
+        genotype = genotype.copy() #create copy to not modify the original array
+        genotype[oob] = rng.uniform(lo, hi, size = n_oob) #generate n_oob random numbers uniformly distrubuted bet lo and hi
+    return genotype
+
+
+# def reflect_into_bounds(x, low, high):
+#     """Reflect values in ``x`` into the box [low, high] using a tent map.
+
+#     Preserves the magnitude of the intended mutation step instead of
+#     discarding it (which random-resample does).
+#     """
+#     range_ = high - low
+#     if range_ <= 0:
+#         return x
+#     y = np.mod(x - low, 2.0 * range_)
+#     y = np.where(y > range_, 2.0 * range_ - y, y)
+#     return low + y
 
 
 class Individual:
@@ -33,13 +90,26 @@ class Individual:
     _BETA = 0.0873
     _EPSILON = 1e-7
 
-    def __init__(self, genotype, strategy, strategy_parameters, bounds=None, random_seed=None):
+    def __init__(self, genotype, strategy, strategy_parameters, bounds=None, random_seed=None, repair="random"):
         """Initialize the Individual.
 
-        :param genotype: the genotype of the individual
-        :param strategy: the strategy chosen to reproduce. See the Strategy enum for more
-                         information
-        :param strategy_parameters: the parameters required for the given strategy, as a list
+        Parameters
+        ----------
+        genotype : array-like
+            The genotype of the individual.
+        strategy : Strategy
+            Reproduction strategy. See the Strategy enum.
+        strategy_parameters : list
+            Parameters required for the chosen strategy.
+        bounds : tuple(float, float) or None
+            (lo, hi) box constraint applied during reproduction.
+        random_seed : int or numpy RandomState, optional
+            Seed for the RNG.
+        repair : str, optional
+            Constraint-repair mode used after mutation.  Must be one of
+            ``"random"`` (default, original behaviour), ``"clip"``, or
+            ``"reflect"``.  The value is forwarded to every child produced
+            by ``reproduce()`` so it stays consistent across generations.
         """
         self.genotype = genotype
         self.length = len(genotype)
@@ -50,6 +120,8 @@ class Individual:
         self.bounds = bounds
         self.strategy = strategy
         self.strategy_parameters = strategy_parameters
+        self.repair = repair #propagated to every child below
+
         if not isinstance(strategy, Strategy):
             raise ValueError("Provided strategy parameter was not an instance of Strategy.")
         if strategy == Strategy.SINGLE_VARIANCE and len(strategy_parameters) == 1:
@@ -63,6 +135,8 @@ class Individual:
             self.reproduce = self._reproduce_single_variance_1_5
         else:
             raise ValueError("The length of the strategy parameters was not correct.")
+        
+    # ── fitness evaluation ────────────────────────────────────────────────────
 
     def evaluate(self, fitness_function):
         """Evaluate the genotype of the individual using the provided fitness function.
@@ -73,6 +147,8 @@ class Individual:
         self.fitness = fitness_function(self.genotype)
 
         return self.fitness
+    
+    # ── reproduction methods ──────────────────────────────────────────────────
 
     def _reproduce_single_variance(self):
         """Create a single offspring individual from the set genotype and strategy parameters.
@@ -81,30 +157,23 @@ class Individual:
 
         :return: an individual which is the offspring of the current instance
         """
-        new_genotype = self.genotype + self.strategy_parameters[0] * self.random.randn(self.length)
-        # Baseline uses the ORIGINAL random-resample repair (not reflection), so that
-        # reflection/clip are measurable WP3 improvements rather than baked into B.
-        # (Matches WP3's repair="random" default + the multiple/full-variance paths.)
-        oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
-        new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
+        new_genotype = (self.genotype
+                        + self.strategy_parameters[0] * self.random.randn(self.length))
+
+        # Unified constraint repair (WP3). Baseline B uses repair="random" (the original
+        # random-resample), so reflect/clip stay measurable WP3 improvements rather than
+        # being baked into B. (Same default behaviour as main's previous inline repair.)
+        new_genotype = _repair(new_genotype,
+                               self.bounds[0], self.bounds[1],
+                               self.repair, self.random)
         scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         new_parameters = [max(self.strategy_parameters[0] * np.exp(scale_factor), self._EPSILON)]
-        return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds, random_seed=self.random)
 
-    def _reproduce_single_variance_1_5(self):
-        """Create a single offspring under the 1/5 success-rule variant.
+        return Individual(new_genotype, self.strategy, new_parameters,
+                           bounds=self.bounds, 
+                           random_seed=self.random,
+                           repair = self.repair) # <- thread through
 
-        Sigma is owned and updated by :class:`EvoPy` at the population level
-        (see Rechenberg's 1/5 rule). The individual just samples a step of
-        magnitude ``strategy_parameters[0]`` and reflects into the bounds.
-        Note: there is no per-individual self-adaptation here — the inherited
-        sigma is simply passed through to the offspring.
-        """
-        sigma = self.strategy_parameters[0]
-        new_genotype = self.genotype + sigma * self.random.randn(self.length)
-        new_genotype = reflect_into_bounds(new_genotype, self.bounds[0], self.bounds[1])
-        return Individual(new_genotype, self.strategy, [sigma],
-                          bounds=self.bounds, random_seed=self.random)
 
     def _reproduce_multiple_variance(self):
         """Create a single offspring individual from the set genotype and strategy.
@@ -113,18 +182,23 @@ class Individual:
 
         :return: an individual which is the offspring of the current instance
         """
-        new_genotype = self.genotype + [self.strategy_parameters[i] * self.random.randn()
-                                        for i in range(self.length)]
-        # Randomly sample out of bounds indices
-        oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
-        new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
+        new_genotype = (self.genotype + [self.strategy_parameters[i] * self.random.randn()
+                                        for i in range(self.length)])
+        
+        new_genotype = _repair(new_genotype,
+                               self.bounds[0], self.bounds[1],
+                               self.repair, self.random) #unified repair
+        
         global_scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         scale_factors = [self.random.randn() / np.sqrt(2 * np.sqrt(self.length))
                          for _ in range(self.length)]
         new_parameters = [max(np.exp(global_scale_factor + scale_factors[i])
                               * self.strategy_parameters[i], self._EPSILON)
                           for i in range(self.length)]
-        return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds, random_seed=self.random)
+        return Individual(new_genotype, self.strategy, new_parameters, 
+                          bounds=self.bounds, 
+                          random_seed=self.random,
+                          repair = self.repair)  #<- thread through
 
     # pylint: disable=invalid-name
     def _reproduce_full_variance(self):
@@ -157,7 +231,12 @@ class Individual:
                 T = np.matmul(T, T_pq)
         # new_genotype = self.genotype + T @ self.random.randn(self.length)
         new_genotype = self.genotype + T @ (np.array(new_variances) * self.random.randn(self.length))
-        # Randomly sample out of bounds indices
-        oob_indices = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
-        new_genotype[oob_indices] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob_indices))
-        return Individual(new_genotype, self.strategy, new_variances + new_rotations, bounds=self.bounds, random_seed=self.random)
+
+        new_genotype = _repair(new_genotype,
+                               self.bounds[0], self.bounds[1],
+                               self.repair, self.random) #unified repair
+   
+        return Individual(new_genotype, self.strategy, new_variances + new_rotations,
+                         bounds=self.bounds, 
+                         random_seed=self.random,
+                         repair = self.repair) # <- thread through

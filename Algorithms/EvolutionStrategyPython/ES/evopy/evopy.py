@@ -23,7 +23,7 @@ class EvoPy:
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
                  max_evaluations=None, bounds=None, selection_scheme="plus",
-                 init_sigma_scale=0.3, init="lhs"):
+                 init_sigma_scale=0.3, init="lhs", repair= "random"): #WP3: new kwarjg, default "random" = original behaviour
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -46,6 +46,12 @@ class EvoPy:
         :param bounds: bounds for the sampling the parameters of individuals
         :param selection_scheme: "plus" for (mu+lambda) or "comma" for (mu,lambda)
         :param init_sigma_scale: initial step size as a fraction of the bounds range
+        :param repair: constraint-repair mode applied after every mutation step.
+               ``"random"`` (default) resamples out-of-bounds alleles uniformly —
+               identical to the original behaviour, so omitting this kwarg is a
+               strict no-op.  ``"clip"`` clamps to the nearest boundary.
+               ``"reflect"`` folds via a tent-map, preserving step magnitude.
+               Threaded from here down to every Individual and their offspring.
         """
         self.fitness_function = fitness_function
         self.individual_length = individual_length
@@ -65,13 +71,14 @@ class EvoPy:
         self.max_run_time = max_run_time
         self.max_evaluations = max_evaluations
         self.bounds = bounds
+        self.repair = repair #WP3 improvement
         self.selection_scheme = selection_scheme
         self.init_sigma_scale = init_sigma_scale
         self.init = init
         self.evaluations = 0
         # Population-level sigma for the 1/5 rule variant (set in run()).
         self._sigma_1_5 = None
-
+        
     def _check_early_stop(self, start_time, best):
         """Check whether the algorithm can stop early, based on time and fitness target.
 
@@ -204,6 +211,7 @@ class EvoPy:
                 list(strategy_parameters),  # one independent copy per individual
                 random_seed=self.random,
                 bounds=self.bounds,
+                repair = self.repair #WP3: Thread repair mode to every individual
             ) for parameters in population_parameters
         ]
 
