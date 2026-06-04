@@ -82,8 +82,8 @@ class Individual:
         :return: an individual which is the offspring of the current instance
         """
         new_genotype = self.genotype + self.strategy_parameters[0] * self.random.randn(self.length)
-        # Reflect out-of-bounds coordinates back into [low, high] (preserves step magnitude).
-        new_genotype = reflect_into_bounds(new_genotype, self.bounds[0], self.bounds[1])
+        oob = (new_genotype < self.bounds[0]) | (new_genotype > self.bounds[1])
+        new_genotype[oob] = self.random.uniform(self.bounds[0], self.bounds[1], size=np.count_nonzero(oob))
         scale_factor = self.random.randn() * np.sqrt(1 / (2 * self.length))
         new_parameters = [max(self.strategy_parameters[0] * np.exp(scale_factor), self._EPSILON)]
         return Individual(new_genotype, self.strategy, new_parameters, bounds=self.bounds, random_seed=self.random)

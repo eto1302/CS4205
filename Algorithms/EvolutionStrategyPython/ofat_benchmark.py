@@ -25,7 +25,7 @@ import numpy as np
 from ES.evopy import EvoPy, Strategy
 
 # ── config (env-overridable so the smoke test is cheap) ──────────────────────
-CIRCLE_SIZES = [int(x) for x in os.environ.get("WP1_NS", "15").split(",")]
+CIRCLE_SIZES = [int(x) for x in os.environ.get("WP1_NS", "15, 20").split(",")]
 N_SEEDS      = int(os.environ.get("WP1_SEEDS", "25"))
 MAX_EVALS    = int(os.environ.get("WP1_EVALS", "100000"))
 POPULATION   = 30
