@@ -52,7 +52,8 @@ TREATMENTS = [
     ("baseline", "WP4", {}),
     ("SINGLE_VARIANCE", "WP4", {"strategy": Strategy.SINGLE_VARIANCE}),
     ("MULTIPLE_VARIANCE", "WP4", {"strategy": Strategy.MULTIPLE_VARIANCE}),
-    ("FULL_VARIANCE", "WP4", {"strategy": Strategy.FULL_VARIANCE}),
+    # `baseline` already uses FULL_VARIANCE via `BASELINE`, so an explicit
+    # FULL_VARIANCE entry would duplicate the same treatment and is removed.
 ]
 
 

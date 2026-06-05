@@ -1,0 +1,7 @@
+treatment,wp,n_circles,metric,n_base,n_arm,base_median,arm_median,effect,ci_lo,ci_hi,a12,p_value,marker,note
+FULL_VARIANCE,WP4,7,final_gap,1,1,,,,,,,,,insufficient data (few runs reached target)
+FULL_VARIANCE,WP4,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+MULTIPLE_VARIANCE,WP4,7,final_gap,1,1,,,,,,,,,insufficient data (few runs reached target)
+MULTIPLE_VARIANCE,WP4,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+SINGLE_VARIANCE,WP4,7,final_gap,1,1,,,,,,,,,insufficient data (few runs reached target)
+SINGLE_VARIANCE,WP4,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
