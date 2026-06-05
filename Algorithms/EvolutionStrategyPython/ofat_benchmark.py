@@ -88,15 +88,15 @@ BASELINE = dict(
 # only vary one factor at a time, so the archive arms here all sit on (mu,lambda).)
 TREATMENTS = [
     ("baseline",        "WP1", {}),
-    ("B-no_lhs",        "WP1", {"init": "uniform"}),   # LHS ablation: quantifies LHS's contribution
+    # ("B-no_lhs",        "WP1", {"init": "uniform"}),   # LHS ablation: quantifies LHS's contribution
     ("B+plus",          "WP2", {"selection_scheme": "plus"}),       # Ivan: (mu+lambda) arm vs (mu,lambda) baseline (§3.1)
     ("B+arch_book",     "WP2", {"archive_mode": "bookkeeping"}),    # Ivan: elitist archive, bookkeeping (§4.1)
     ("B+arch_reintro",  "WP2", {"archive_mode": "reintroduction"}), # Ivan: archive + reintroduction on stagnation
-    ("B-repair_clip",         "WP3", {"repair": "clip"}),         # Cala
-    ("B-repair_reflect",         "WP3", {"repair": "reflect"}),         # Cala
+    # ("B-repair_clip",         "WP3", {"repair": "clip"}),         # Cala
+    # ("B-repair_reflect",         "WP3", {"repair": "reflect"}),         # Cala
     # ("B+recomb",       "WP4", {"recombine": True}),        # Agata
-    ("B+final_polish",       "WP5", {"local_search": "final"}),        # Martin
-    ("B+interleaved_polish", "WP5", {"local_search": "interleaved"}),  # Martin
+    # ("B+final_polish",       "WP5", {"local_search": "final"}),        # Martin
+    # ("B+interleaved_polish", "WP5", {"local_search": "interleaved"}),  # Martin
 ]
 
 
