@@ -71,11 +71,27 @@ BASELINE = dict(
 )
 
 # (label, owning-WP, overrides-on-top-of-BASELINE). Each WP appends ONE line.
+#
+# WP2 selection head-to-head: the baseline IS the (mu,lambda) arm
+# (selection_scheme="comma", §3.1), so the "B+plus" treatment below is the
+# (mu+lambda) arm. stats.py compares them automatically (Mann-Whitney + A12),
+# giving the (mu,lambda) vs (mu+lambda) head-to-head with the §3.1 justification:
+# BSw95 §6.4 — (mu+lambda) lets a misadapted sigma survive on CiaS plateaus,
+# hindering self-adaptation; modern ES default to (mu,lambda).
+#
+# WP2 elitist archive (§4.1): each archive mode is one more single-factor
+# treatment on top of the (mu,lambda) baseline. "bookkeeping" returns the
+# best-ever (never lose the best, search untouched); "reintroduction" also
+# reinjects archived elites on stagnation. stats.py compares each against the
+# same baseline, so we see whether the archive actually changes the outcome.
+# (The full archive x selection factorial lives in benchmark_Cala.py; OFAT can
+# only vary one factor at a time, so the archive arms here all sit on (mu,lambda).)
 TREATMENTS = [
-    ("baseline",  "WP1", {}),
-    ("B-no_lhs",  "WP1", {"init": "uniform"}),   # LHS ablation: quantifies LHS's contribution
-    # ("B+archive",      "WP2", {"archive_size": 5}),       # Ivan
-    # ("B+plus",         "WP2", {"selection_scheme": "plus"}),
+    ("baseline",        "WP1", {}),
+    ("B-no_lhs",        "WP1", {"init": "uniform"}),   # LHS ablation: quantifies LHS's contribution
+    ("B+plus",          "WP2", {"selection_scheme": "plus"}),       # Ivan: (mu+lambda) arm vs (mu,lambda) baseline (§3.1)
+    ("B+arch_book",     "WP2", {"archive_mode": "bookkeeping"}),    # Ivan: elitist archive, bookkeeping (§4.1)
+    ("B+arch_reintro",  "WP2", {"archive_mode": "reintroduction"}), # Ivan: archive + reintroduction on stagnation
     ("B-repair_clip",         "WP3", {"repair": "clip"}),         # Cala
     ("B-repair_reflect",         "WP3", {"repair": "reflect"}),         # Cala
     # ("B+recomb",       "WP4", {"recombine": True}),        # Agata
@@ -115,6 +131,7 @@ def run_one(overrides, n_circles, seed):
         "strategy": kwargs["strategy"].name, "init": kwargs["init"],
         "selection_scheme": kwargs["selection_scheme"],
         "repair": kwargs.get("repair", "random"),
+        "archive_mode": kwargs.get("archive_mode", "off"),
         "final_best": round(final_best, 8),
         "final_gap": round((target - final_best) / target, 8),
         "total_evals": int(evals[-1]),
@@ -130,8 +147,8 @@ def run_one(overrides, n_circles, seed):
 def main():
     os.makedirs(RESULTS_DIR, exist_ok=True)
     fields = ["treatment", "wp", "n_circles", "seed", "strategy", "init",
-              "selection_scheme", "repair", "final_best", "final_gap", "total_evals",
-              "total_generations"] + [f"evals_to_{t:.0e}" for t in TOLS]
+              "selection_scheme", "archive_mode", "repair", "final_best", "final_gap",
+              "total_evals", "total_generations"] + [f"evals_to_{t:.0e}" for t in TOLS]
 
     n_total = len(TREATMENTS) * len(CIRCLE_SIZES) * N_SEEDS
     print(f"OFAT sweep: {len(TREATMENTS)} treatments x {len(CIRCLE_SIZES)} n x "

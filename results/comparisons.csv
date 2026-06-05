@@ -1,0 +1,33 @@
+treatment,wp,n_circles,metric,n_base,n_arm,base_median,arm_median,effect,ci_lo,ci_hi,a12,p_value,marker,note
+B-no_lhs,WP1,7,final_gap,25,25,0.041819,0.041284,0.000534,-0.012251,0.01646,0.538,6.55e-01,ns,
+B-no_lhs,WP1,7,evals_to_1e-02,3,3,,,,,,,,,insufficient data (few runs reached target)
+B-no_lhs,WP1,10,final_gap,25,25,0.085018,0.085923,-0.000905,-0.016665,0.01884,0.504,9.69e-01,ns,
+B-no_lhs,WP1,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-no_lhs,WP1,15,final_gap,25,25,0.171504,0.161829,0.009675,-0.012622,0.029078,0.549,5.61e-01,ns,
+B-no_lhs,WP1,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-no_lhs,WP1,20,final_gap,25,25,0.226454,0.214631,0.011824,-0.026692,0.0436,0.563,4.49e-01,ns,
+B-no_lhs,WP1,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+plus,WP2,7,final_gap,25,25,0.041819,0.038796,0.003023,-0.010055,0.019621,0.574,3.72e-01,ns,
+B+plus,WP2,7,evals_to_1e-02,3,6,,,,,,,,,insufficient data (few runs reached target)
+B+plus,WP2,10,final_gap,25,25,0.085018,0.043529,0.041489,0.011832,0.059756,0.762,1.56e-03,**,
+B+plus,WP2,10,evals_to_1e-02,0,5,,,,,,,,,insufficient data (few runs reached target)
+B+plus,WP2,15,final_gap,25,25,0.171504,0.445056,-0.273552,-0.298375,-0.231551,0.213,5.14e-04,***,
+B+plus,WP2,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+plus,WP2,20,final_gap,25,25,0.226454,0.516552,-0.290097,-0.318014,-0.273254,0.08,3.70e-07,***,
+B+plus,WP2,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_book,WP2,7,final_gap,25,25,0.041819,0.041819,0.0,-0.009144,0.010076,0.506,9.54e-01,ns,
+B+arch_book,WP2,7,evals_to_1e-02,3,3,,,,,,,,,insufficient data (few runs reached target)
+B+arch_book,WP2,10,final_gap,25,25,0.085018,0.085018,0.0,-0.017919,0.017919,0.508,9.30e-01,ns,
+B+arch_book,WP2,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_book,WP2,15,final_gap,25,25,0.171504,0.171504,0.0,-0.020578,0.021995,0.502,9.92e-01,ns,
+B+arch_book,WP2,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_book,WP2,20,final_gap,25,25,0.226454,0.226454,0.0,-0.025181,0.025181,0.509,9.23e-01,ns,
+B+arch_book,WP2,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_reintro,WP2,7,final_gap,25,25,0.041819,0.041819,0.0,-0.009144,0.010076,0.505,9.61e-01,ns,
+B+arch_reintro,WP2,7,evals_to_1e-02,3,3,,,,,,,,,insufficient data (few runs reached target)
+B+arch_reintro,WP2,10,final_gap,25,25,0.085018,0.085018,0.0,-0.017919,0.017919,0.508,9.30e-01,ns,
+B+arch_reintro,WP2,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_reintro,WP2,15,final_gap,25,25,0.171504,0.171504,0.0,-0.022189,0.020096,0.491,9.23e-01,ns,
+B+arch_reintro,WP2,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_reintro,WP2,20,final_gap,25,25,0.226454,0.21027,0.016184,-0.014228,0.026434,0.558,4.91e-01,ns,
+B+arch_reintro,WP2,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)

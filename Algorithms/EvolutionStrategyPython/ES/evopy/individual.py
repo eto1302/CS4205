@@ -150,6 +150,27 @@ class Individual:
     
     # ── reproduction methods ──────────────────────────────────────────────────
 
+    def clone(self):
+        """Return an independent copy of this individual.
+
+        Used by the elitist archive (EvoPy): the archive stores copies so a
+        later population update can't mutate the archived genotype/sigma, and
+        reintroduction can inject fresh copies back into the population. The
+        cached ``fitness`` is carried over so reintroduced clones need no
+        re-evaluation (they cost no extra evals). The RNG is shared (as in
+        :meth:`reproduce`) so the random stream is unchanged.
+        """
+        twin = Individual(
+            np.copy(self.genotype),
+            self.strategy,
+            list(self.strategy_parameters),
+            bounds=self.bounds,
+            random_seed=self.random,
+        )
+        twin.fitness = self.fitness
+        twin.constraint = self.constraint
+        return twin
+
     def _reproduce_single_variance(self):
         """Create a single offspring individual from the set genotype and strategy parameters.
 

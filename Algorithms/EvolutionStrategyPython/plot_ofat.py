@@ -19,7 +19,7 @@ import matplotlib.lines as mlines
 
 RESULTS_DIR     = "results"
 COMPARISONS_CSV = os.path.join(RESULTS_DIR, "comparisons.csv")
-PLOTS_DIR       = "plots_wp1"
+PLOTS_DIR       = "plots_wp2"
 DEFAULT_METRIC  = "final_gap"
 
 
