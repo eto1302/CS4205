@@ -105,4 +105,6 @@ def recombine_individuals(parent_a, parent_b, mode="coordinate", random=None):
             tail = a_s_arr[m:]
             new_strategy = np.concatenate([head, tail])
 
-    return new_genotype.tolist(), new_strategy.tolist()
+    # return numpy arrays for genotype/strategy so downstream code performs
+    # numeric ops (e.g. elementwise addition) instead of Python list concatenation
+    return new_genotype, new_strategy
