@@ -127,7 +127,7 @@ class CirclesInASquare:
 
         return values_to_reach[self.n_circles - 2]
 
-    def run_evolution_strategies(self):
+    def run_evolution_strategies(self, seed=None, repair="random"):
         callback = self.statistics_callback if self.output_statistics else None
 
         evopy = EvoPy(
@@ -140,7 +140,9 @@ class CirclesInASquare:
             target_fitness_value=self.get_target(),
             max_evaluations=1e5,
             strategy=Strategy.SINGLE_VARIANCE,  # matches the OFAT baseline B
-            num_children=7  # lambda/mu = 210/30 = 7 (BSw95 ratio); matches benchmark.py
+            num_children=7,  # lambda/mu = 210/30 = 7 (BSw95 ratio); matches benchmark.py
+            random_seed=seed,
+            repair=repair,
         )
 
         best_solution = evopy.run()
@@ -149,9 +151,43 @@ class CirclesInASquare:
             plt.close()
 
         return best_solution
+    
+    def plot_final_packing(self, genotype):
+            fitness = circles_in_a_square(genotype)
+            points = np.reshape(genotype, (-1, 2))
+            max_radius = fitness / (2 + 2 * fitness)
+            scale = 1.0 - 2 * max_radius
+            points_scaled = points * scale + max_radius
+
+            # Rescale centres from [0,1] to [r, 1-r] so all circles fit inside
+            
+
+            fig, ax = plt.subplots(figsize=(6, 6))
+            ax.set_aspect("equal")
+            ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+
+            for i, (x, y) in enumerate(points_scaled):
+                ax.add_patch(Circle((x, y), max_radius,
+                                    edgecolor="black", facecolor="steelblue", alpha=0.4))
+                ax.plot(x, y, "k.", markersize=4)
+                ax.text(x, y, str(i + 1), ha="center", va="center",
+                        fontsize=8, fontweight="bold")
+
+            optimum = self.get_target()
+            gap = (optimum - fitness) / optimum * 100
+            ax.set_title(
+                f"Best packing — n={self.n_circles} circles\n"
+                f"fitness={fitness:.6f}  |  optimum={optimum:.6f}  |  gap={gap:.4f}%",
+                fontsize=10
+            )
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            plt.tight_layout()
+            plt.show()
 
 
 if __name__ == "__main__":
-    circles = 10
-    runner = CirclesInASquare(circles, plot_sols=True, output_statistics=True)
-    best = runner.run_evolution_strategies()
+    runner = CirclesInASquare(7, output_statistics=False)
+    best = runner.run_evolution_strategies(seed=2, repair="clip")
+    runner.plot_final_packing(best)
