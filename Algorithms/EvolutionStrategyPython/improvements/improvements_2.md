@@ -430,19 +430,27 @@ We need p value tests. that is actually what this work package should most impor
   show whether the algorithm actually *uses* the archive.
 
 ### WP3 — Constraint handling · Cala
-- 4-way repair comparison: random-resample (current) vs clip (§4.6) vs
-  reflection (already in) vs one symmetry-aware projector. Single
-  `_repair(genotype, mode)` helper in `individual.py`; sweep `mode`.
+- **Baseline B now uses random-resample repair** (the original) so reflection and
+  clip are *measurable improvements*, not baked in. 4-way repair comparison vs B:
+  random (baseline) vs **reflection** vs **clip** (§4.6) vs one symmetry-aware
+  projector. Single `_repair(genotype, mode)` helper in `individual.py`; sweep
+  `mode`, default `random`. (Measured: reflection ≈3.6× better gap at n=15 vs
+  random — a real WP3 win that was previously hidden inside the baseline.)
 
 ### WP4 — Recombination & strategy-parameter selection · Agata
-- Recombination (§4.5): discrete on `x`, intermediary on `σ`; add a
-  CiaS-symmetry-aware operator that mixes whole `(xᵢ,yᵢ)` circle-pairs;
-  optionally a scheme that selects between operators.
-- Recombine only the *best-performing* strategy parameter (Arthur).
-- σ-strategy ablation (single/multiple/full) answering "at what point
-  does one beat another?" — needs WP1's τ + rotation fixes to be honest.
-
-Ok claude made this one. I'm not entirely sure what this means, but I guess it is simply finding a scheme of operators which works best, with sound reasoning. also thinking of problem space symmetry.
+- **σ-strategy ablation (single/multiple/full)** vs the **single-variance baseline**
+  B: "does multiple/full ever beat single, and at which n?" Result (medium budget,
+  10 seeds × 20k): **single wins at every n** — this is the evidence base for pinning
+  B = single. (Needs WP1's τ + rotation fixes to be honest.)
+- Recombination (§4.5): discrete on `x`, intermediary on `σ`; **implemented** with a
+  CiaS-symmetry-aware `circle_pair` operator (mixes whole `(xᵢ,yᵢ)` pairs) + a
+  `coordinate` operator. Result: **naive recombination significantly hurts** on CiaS
+  (permutation symmetry — circle indices unaligned across parents). Presented as an
+  honest negative result.
+- **Recombine only the *best-performing* strategy parameter (Arthur) — DEFERRED.**
+  Not yet implemented; only meaningful on multiple/full (several σ to choose among),
+  which recombination wasn't run on. Decide at the team meeting whether to build it.
+- See `improvements/WP4/README.md` for the agreed framing + the stats caveat.
 
 ### WP5 — Gradient + EA hybrid ·  Martin
 - EA = global search, local optimiser (L-BFGS-B on a smooth surrogate)
@@ -450,7 +458,9 @@ Ok claude made this one. I'm not entirely sure what this means, but I guess it i
   final-polish vs interleaved-polish vs pure EA. Demote to
   "explored, here's what we found" if it doesn't beat pure EA.
 
-### Open question for Arthur (relay from Ivan)
+### Open question for Arthur (relay from Ivan) — RESOLVED
 Improve all three σ-strategies in parallel, or commit to the most
-promising one? (WP4's ablation produces the data either way.)
+promising one? **Resolved (2026-06-01): commit to single-variance as the
+baseline** — WP4's ablation shows single wins at every n. Multiple/full remain
+as ablation arms (data already produced), not the default.
 

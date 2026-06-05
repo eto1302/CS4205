@@ -7,19 +7,42 @@ how to plug your change in. Deeper dives: [`statistics-guide.md`](statistics-gui
 
 WP1 delivers a **correct baseline** (4 bugs fixed — see `bug-fixes.md`) and a
 **shared way to measure improvements** so each of ours gets an honest,
-significance-tested verdict against the *same* baseline.
+significance-tested verdict against the *same* baseline. (WP1 is the framework,
+not a tuning improvement — see the LHS note below.)
 
 ![pipeline](figs/wp1-pipeline.png)
+
+> **WP1's own result — Latin-hypercube init (LHS) is an honest negative.** We
+> measured LHS by ablation (`B` vs `B-no_lhs`, where `B-no_lhs` uses plain uniform
+> init), 25 seeds × n∈{7,10,15,20} on the single-variance baseline:
+> **no significant difference at any n** (A12 ≈ 0.50–0.56, all p > 0.4). So LHS's
+> *stratification* buys nothing measurable over plain uniform here. The iteration-1
+> "LHS win" was really *spreading out* (uniform OR LHS) beating the old *clustered*
+> warm-start-0 init — not stratification. WP1's real contributions are the **bug
+> fixes** (esp. restoring selection pressure) and **this measurement framework**.
 
 ---
 
 ## 1 · The method: OFAT against a frozen baseline
 
 We use **OFAT — One-Factor-At-A-Time**. There is **one frozen baseline B**
-(bug-fixed, `(μ,λ)`, LHS init, FULL_VARIANCE). Every improvement = B with
+(bug-fixed, `(μ,λ)`, LHS init, **SINGLE_VARIANCE**, **random-resample repair**).
+Every improvement = B with
 **exactly one thing changed**, compared against **the same B**, over
 **25 seeds × n ∈ {7,10,15,20}**. Because only your factor changes, the measured
 effect is **yours alone, unconfounded** by anyone else's change.
+
+> **Why single-variance for B?** It's the simplest, cheapest, most standard ES
+> default — the neutral reference. WP4's σ-strategy ablation showed single wins
+> at every n (multiple/full are slower to adapt and don't beat it in our budget),
+> so single is the honest baseline and multiple/full are WP4 **ablation arms**,
+> not the baseline. (Changed from FULL_VARIANCE on 2026-06-01.)
+>
+> **Why random-resample repair for B?** B uses the *original* random-resample for
+> out-of-bounds alleles — the honest starting point — so that better repair
+> (reflection, clip) shows up as a **measurable WP3 improvement** instead of being
+> silently baked in. Measured: reflection cuts the gap ~3.6× at n=15 / ~2.8× at
+> n=20 vs random — a real WP3 win, now creditable rather than hidden.
 
 The headline output is a **forest plot** — one row per improvement:
 
@@ -85,9 +108,10 @@ Per WP:
 - **WP3 (Cala):** repair is split (reflect at `individual.py:86`, random-resample
   at `:116-117`). Unify into `_repair(genotype, mode)` + a `repair="reflect"`
   kwarg threaded `EvoPy → Individual`. Modes: `random|clip|reflect|projector`.
-- **WP4 (Agata):** σ-strategy is already `strategy=`. Recombination → add
-  `recombine=False`; when on, build each child from two parents (discrete on x,
-  intermediary on σ).
+- **WP4 (Agata):** σ-strategy is already `strategy=`; ablation arms just set
+  `{"strategy": MULTIPLE_VARIANCE}` / `{"strategy": FULL_VARIANCE}` vs the single
+  baseline. Recombination is implemented (`recombine=`, `recombination_mode=`).
+  See `improvements/WP4/README.md` for the agreed framing.
 - **WP5 (Martin):** add `local_search="none"`; `"final"` = one L-BFGS-B polish
   after the loop, `"interleaved"` = every K gens. Charge gradient evals to
   `self.evaluations`.
@@ -131,4 +155,6 @@ improvement always shows up somewhere.
 The default config in `ofat_benchmark.py` *is* the full sweep: every treatment ×
 `n ∈ {7,10,15,20}` × **25 seeds** × **100 000 evals**. (Smoke runs shrink these
 to test the plumbing — those numbers are noise.) 25 seeds is what gives the test
-enough to separate signal from luck. It's slow on FULL_VARIANCE — budget the time.
+enough to separate signal from luck. The single-variance baseline is cheap; arms
+that switch to FULL_VARIANCE (e.g. WP4's σ-ablation) are much slower — budget the
+time for those.

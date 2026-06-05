@@ -1,0 +1,172 @@
+{
+  \renewcommand{\bginsert}{\hfill\raisebox{-0.4\paperheight}{\color{tud LightPurple}%
+    \clap{\hspace*{-0.8\paperwidth}\includegraphics[width=2.1\paperwidth]{figures/Library_TUDelft_sunny.jpg}}}\hfill}
+  \section{Working with\\split frames}
+}
+
+
+\setlength{\splitpos}{0.4\paperwidth}
+\renewcommand{\bginsert}{\textcolor{tud RoyalBlue}{\hspace{-0.55\paperwidth}%
+  \raisebox{-0.3\paperheight}{\tudflame[1.2\paperwidth]}}}
+\leftfooterwhitetrue
+
+\begin{frame}%
+  \frametitle{A split \texttt{frame}}%
+  \framesubtitle{for \texttt{\textbackslash splitpos} = 0.4 \texttt{\textbackslash paperwidth}}
+  \begin{columns}[T]
+    \begin{textcolumn}
+    \end{textcolumn}
+    \begin{textcolumn}
+      When \texttt{\textbackslash splitpos} is given a positive value, the frame title to the right side, and the left side gets a colored background.
+      \begin{itemize}
+        \item The \texttt{textcolumn} environment can be used to add text to either one of the columns.
+        \item The command \texttt{\textbackslash bginsert} can be redefined to add something on top of the colored pane, clipped off at the edges.
+        \item Use \texttt{\textbackslash usebackgroundtemplate} to redefine the background more generally.
+      \end{itemize}
+    \end{textcolumn}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}%
+  \frametitle{A split \texttt{frame}}%
+  \framesubtitle{scoping\ldots}%
+  \begin{columns}[T]
+    \begin{textcolumn}
+    \end{textcolumn}
+    \begin{textcolumn}
+      To keep the footers visible, they can be made white using these commands:
+      \begin{itemize}
+        \item \texttt{\textbackslash leftfooterwhitefalse}
+        \item \texttt{\textbackslash rightfooterwhitefalse}
+        \item \texttt{\textbackslash leftfooterwhitetrue}
+        \item \texttt{\textbackslash rightfooterwhitetrue}
+      \end{itemize}
+      
+      The scope for all of these tweaks can be limited by \texttt{\{} and \texttt{\}},
+      or---more readable---by \texttt{\textbackslash begingroup} and \texttt{\textbackslash endgroup}.
+    \end{textcolumn}
+  \end{columns}
+\end{frame}
+
+
+\setlength{\splitpos}{-0.4\paperwidth}
+\leftfooterwhitefalse
+
+{
+\setbeamercolor{background canvas}{bg=tud DarkGrey!15,fg=white}
+\footerinfootnotestrue
+\begin{frame}%
+  \frametitle{Negative \texttt{\textbackslash splitpos}}
+  \framesubtitle{e.g. \texttt{-0.4\textbackslash paperwidth}}
+  \begin{columns}[T]
+    \begin{textcolumn}
+      Using a negative value for \texttt{\textbackslash splitpos}, the background panes swap places.
+      
+      The \texttt{tikzcolumn} environment can be used instead of \texttt{textcolumn},
+      to place items in one of the panes using tikz\footnote[frame]{see \url{https://tikz.dev/}} commands.
+      The default units are set relative to the paper size.
+
+      The \texttt{abstikz} environment does almost the same, without being restricted to the column, or influencing the placement of another \texttt{textcolumn}.
+    \end{textcolumn}
+    \begin{tikzcolumn}
+      \node at (.8, .5)
+        {\includegraphics[height=0.9\paperheight]{icons/design proces/iterations.pdf}};
+      \draw[red, latex-] (1, 0) -- ++(135:1em) node[anchor=east] {(\textbackslash paperwidth, 0)};
+      \draw[red, latex-] (1, 1) -- ++(-135:1em) node[anchor=east] {(\textbackslash paperwidth, \textbackslash paperheight)};
+    \end{tikzcolumn}
+    \begin{abstikz}
+      \draw[red, latex-] (0, 0) -- ++(45:1em) node[anchor=west,rotate=90] {origin (0, 0)---using \texttt{abstikz}};
+    \end{abstikz}
+  \end{columns}
+\end{frame}
+}
+
+\rightfooterwhitetrue
+\renewcommand{\bginsert}{\textcolor{tud RoyalBlue}{\hspace{0.2\paperwidth}%
+  \raisebox{-0.3\paperheight}{\tudflame[1.2\paperwidth]}}}
+
+\begin{frame}{Mass--energy equivalence}
+  \begin{columns}[T]
+    \begin{textcolumn}
+      They say every formula you add to a presentation, will reduce your audience
+      by \SI{50}{\percent}. A simple yet effective way to mitigate this effect,
+      is adding a compact nomenclature to the slides containing formulae.
+      \[E=mc_0^2\]
+      
+      If you find this is taking up too much of your precious space,
+      than you are doing something wrong, and it is not adding this little nomenclature.
+      
+      % Pro tip: You can use this mechanism as well to show other bits of easily
+      % forgotten information, say, the meaning of acronyms, or the value of
+      % parameters that your listeners need to know to fathom the depths of your
+      % insights.
+    \end{textcolumn}
+    \begin{textcolumn}
+      \color{white}
+      \begin{tabular}{cp{7em}c}
+        $E$ & Energy & (\unit{J}) \\
+        $m$ & Mass & (\unit{kg}) \\
+        $c_0$ & Speed of light in vacuum & (\unit{m/s})\\
+        %(\qty{299.792458e6}{m/s}) \\
+        TU &  Technical University
+      \end{tabular}
+    \end{textcolumn}
+  \end{columns}
+\end{frame}
+
+
+\setlength{\splitpos}{-0.3\paperwidth}
+
+\begin{frame}[t]{Colors}
+  \begin{columns}[T, onlytextwidth]
+    \begin{column}{0.5\textwidth}
+      All colors from the TUD style guide are predefined for your convenience.
+      You can create a table similar to the example in their powerpoint as such:\\[1ex]
+      
+      \renewcommand{\arraystretch}{1.4}
+      \rowcolors{2}{gray!25}{white}
+      \newcommand{\thead}{\color{white}\bfseries} % for table header formatting
+      \begin{tabular}{>{\color{tud Blue}\bfseries}l|S}
+        \rowcolor{tud Blue}
+        \thead Table head & {\thead Table head} \\
+        Huge number & 100e3 \\
+        Large number & 1000\\
+        Normal number & 10\\
+        Small number & 0.1\\
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.25\textwidth}
+      \begin{itemize}
+        \item \textcolor{tud DarkBlue}{\textbf{dark blue}}
+        \item \textcolor{tud Turquoise}{\textbf{turquoise}}
+        \item \textcolor{tud RoyalBlue}{\textbf{royal blue}}
+        \item \textcolor{tud LightPurple}{\textbf{light purple}}
+        \item \textcolor{tud Pink}{\textbf{pink}}
+        \item \textcolor{tud Burgundy}{\textbf{burgundy}}
+        \item \textcolor{tud Red}{\textbf{red}}
+        \item \textcolor{tud Orange}{\textbf{orange}}
+        \item \textcolor{tud Yellow}{\textbf{yellow}}
+        \item \textcolor{tud Green}{\textbf{green}}
+        \item \textcolor{tud ForestGreen}{\textbf{forest green}}
+        \item \textcolor{tud DarkGrey}{\textbf{dark grey}}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.25\textwidth}
+      \begin{itemize}
+        \item \textcolor{tud DarkBluePale}{\textbf{dark blue}}
+        \item \textcolor{tud TurquoisePale}{\textbf{turquoise}}
+        \item \textcolor{tud RoyalBluePale}{\textbf{royal blue}}
+        \item \textcolor{tud LightPurplePale}{\textbf{light purple}}
+        \item \textcolor{tud PinkPale}{\textbf{pink}}
+        \item \textcolor{tud BurgundyPale}{\textbf{burgundy}}
+        \item \textcolor{tud RedPale}{\textbf{red}}
+        \item \textcolor{tud OrangePale}{\textbf{orange}}
+        \item \textcolor{tud YellowPale}{\textbf{yellow}}
+        \item \textcolor{tud GreenPale}{\textbf{green}}
+        \item \textcolor{tud ForestGreenPale}{\textbf{forest green}}
+        \item \textcolor{tud DarkGreyPale}{\textbf{dark grey}}
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}

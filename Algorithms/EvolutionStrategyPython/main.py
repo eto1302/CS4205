@@ -139,7 +139,7 @@ class CirclesInASquare:
             bounds=(0, 1),
             target_fitness_value=self.get_target(),
             max_evaluations=1e5,
-            strategy=Strategy.FULL_VARIANCE,
+            strategy=Strategy.SINGLE_VARIANCE,  # matches the OFAT baseline B
             num_children=7  # lambda/mu = 210/30 = 7 (BSw95 ratio); matches benchmark.py
         )
 

@@ -1,0 +1,49 @@
+\documentclass[t, aspectratio=169, english, table]{_style/tudelft-beamer}
+% \includeonlyframes{current}% beamer documentation \S 4.3.3
+
+\title[My awesome year]{Looking back on an awesome year with many conversations over a multitude of good cups of tea}
+\subtitle{including a sidenote on said tea}
+\author[Einstein \& Lorentz]{A.~Einstein\inst{1} \and H.~Lorentz\inst{2}}
+\date{31-12-1905}
+% define a graphic to be shown next to the title
+\titlegraphic{\includegraphics[width=0.4\paperwidth]{icons/digital society/electrical_engineering.pdf}}
+
+% optional:
+% \setlength{\titlesplitpos}{-0.5\paperwidth}
+% mind that in this case, the white pane is the background, and the blue one on top.
+
+\institute[Universities of Somewhere and Elsewhere]{
+  \strut\llap{\inst{1}\,}Department of Black Holes and Tea\\University of Leiden\and
+  \strut\llap{\inst{2}\,}Department of Bending Rivers, Space and Time\\University of Delft}
+\date[CFP 2003]{Conference on Fabulous Presentations, 2003}
+
+\addbibresource{bibfile.bib}
+
+\newcommand{\absimage}[4][0.5,0.5]{%
+  \begin{textblock}{#3}%width
+    [#1]% alignment anchor within image (centered by default)
+    (#2)% position on the page (origin is top left)
+    \includegraphics[width=#3\paperwidth]{#4}%
+\end{textblock}}
+
+
+\begin{document}
+
+
+\titleframe
+
+\input{intro.tex}
+\input{features.tex}
+\input{split_frames.tex}
+\input{animations.tex}
+\input{matplotlib.tex}
+\input{full-screen.tex}
+\input{thanks.tex}
+
+\begin{frame}[allowframebreaks,t]{\bibname}
+  % the 'I' is caused by 'allowframebreaks'
+  \AtNextBibliography{\footnotesize}% or in the preamble \AtBeginBibliography{\small}
+  \printbibliography
+\end{frame}
+
+\end{document}

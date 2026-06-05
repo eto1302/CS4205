@@ -24,7 +24,8 @@ class EvoPy:
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
                  max_evaluations=None, bounds=None, selection_scheme="plus",
                  init_sigma_scale=0.3, init="lhs", archive_mode="off",
-                 archive_size=5, stagnation_generations=20):
+                 archive_size=5, stagnation_generations=20, repair="random",  # WP3: repair mode, default "random" = original behaviour
+                 local_search="none", local_search_k=10):            # WP5: gradient local-search hybrid
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -47,6 +48,15 @@ class EvoPy:
         :param bounds: bounds for the sampling the parameters of individuals
         :param selection_scheme: "plus" for (mu+lambda) or "comma" for (mu,lambda)
         :param init_sigma_scale: initial step size as a fraction of the bounds range
+        :param repair: constraint-repair mode applied after every mutation step.
+               ``"random"`` (default) resamples out-of-bounds alleles uniformly —
+               identical to the original behaviour, so omitting this kwarg is a
+               strict no-op.  ``"clip"`` clamps to the nearest boundary.
+               ``"reflect"`` folds via a tent-map, preserving step magnitude.
+               Threaded from here down to every Individual and their offspring.
+        :param local_search: "none" (default), "final" (one L-BFGS-B polish after the loop),
+                             or "interleaved" (polish best every local_search_k generations)
+        :param local_search_k: interval in generations for "interleaved" local search
         :param archive_mode: elitist-archive behaviour (WP2 §4.1):
                              "off"            — no archive (return the final
                                                 population best, original behaviour);
@@ -83,16 +93,19 @@ class EvoPy:
         self.max_run_time = max_run_time
         self.max_evaluations = max_evaluations
         self.bounds = bounds
+        self.repair = repair #WP3 improvement
         self.selection_scheme = selection_scheme
         self.init_sigma_scale = init_sigma_scale
         self.init = init
+        self.local_search = local_search
+        self.local_search_k = local_search_k
         self.archive_mode = archive_mode
         self.archive_size = archive_size
         self.stagnation_generations = stagnation_generations
         self.evaluations = 0
         # Population-level sigma for the 1/5 rule variant (set in run()).
         self._sigma_1_5 = None
-        # Elitist archive (WP2 §4.1): top-K best-ever individuals + stagnation
+                # Elitist archive (WP2 §4.1): top-K best-ever individuals + stagnation
         # tracking for the "reintroduction" mode. Empty/unused when mode == "off".
         self.archive = []
         self._best_archive_fitness = None
@@ -232,10 +245,44 @@ class EvoPy:
                 std = np.std([x.fitness for x in population])
                 self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std))
 
+            if self.local_search == "interleaved" and (generation + 1) % self.local_search_k == 0:
+                polished_g, polished_f = self._lbfgsb_polish(best.genotype)
+                improved = polished_f > best.fitness if self.maximize else polished_f < best.fitness
+                if improved:
+                    best.genotype = polished_g
+                    best.fitness = polished_f
+                    population[0] = best
+
             if self._check_early_stop(start_time, best):
                 break
 
+        if self.local_search == "final":
+            polished_g, polished_f = self._lbfgsb_polish(best.genotype)
+            best.genotype = polished_g
+            best.fitness = polished_f
+
         return best.genotype
+
+    def _lbfgsb_polish(self, genotype):
+        """Polish a genotype with L-BFGS-B, charging all evaluations to self.evaluations."""
+        from scipy.optimize import minimize
+
+        sign = -1.0 if self.maximize else 1.0
+
+        def objective(x):
+            self.evaluations += 1
+            return sign * self.fitness_function(x)
+
+        bounds = ([(self.bounds[0], self.bounds[1])] * self.individual_length
+                  if self.bounds is not None else None)
+        maxfun = (max(1, self.max_evaluations - self.evaluations)
+                  if self.max_evaluations is not None
+                  else self.individual_length * 200)
+
+        result = minimize(objective, genotype.copy(), method="L-BFGS-B",
+                          bounds=bounds, options={"maxfun": maxfun})
+        polished_fitness = -result.fun if self.maximize else result.fun
+        return result.x, polished_fitness
 
     def _init_population(self):
         # Sensible problem-scaled initial sigma rather than randn() which can give
@@ -281,6 +328,7 @@ class EvoPy:
                 list(strategy_parameters),  # one independent copy per individual
                 random_seed=self.random,
                 bounds=self.bounds,
+                repair = self.repair #WP3: Thread repair mode to every individual
             ) for parameters in population_parameters
         ]
 

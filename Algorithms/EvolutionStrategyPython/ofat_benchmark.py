@@ -58,11 +58,16 @@ def fitness(individual):
 
 # ── Architecture B: frozen baseline + one-line-per-WP treatment registry ─────
 BASELINE = dict(
-    strategy=Strategy.SINGLE_VARIANCE,  # group-agreed Architecture-B baseline (one shared sigma)
+    strategy=Strategy.SINGLE_VARIANCE,  # B pins single-variance: simplest/cheapest neutral
+                                        # reference, and WP4's σ-ablation shows single wins at
+                                        # every n. multiple/full are WP4 ablation arms, not B.
     selection_scheme="comma",          # B pins (mu,lambda); scheme choice is WP2's axis
     init="lhs",
     population_size=POPULATION,
     num_children=NUM_CHILDREN,
+    # Repair: B uses the ORIGINAL random-resample for out-of-bounds alleles (now
+    # consistent across all strategies in individual.py). Reflection/clip are
+    # measurable WP3 improvements, NOT baked into the baseline.
 )
 
 # (label, owning-WP, overrides-on-top-of-BASELINE). Each WP appends ONE line.
@@ -87,9 +92,11 @@ TREATMENTS = [
     ("B+plus",          "WP2", {"selection_scheme": "plus"}),       # Ivan: (mu+lambda) arm vs (mu,lambda) baseline (§3.1)
     ("B+arch_book",     "WP2", {"archive_mode": "bookkeeping"}),    # Ivan: elitist archive, bookkeeping (§4.1)
     ("B+arch_reintro",  "WP2", {"archive_mode": "reintroduction"}), # Ivan: archive + reintroduction on stagnation
-    # ("B-clip",         "WP3", {"repair": "clip"}),         # Cala
+    ("B-repair_clip",         "WP3", {"repair": "clip"}),         # Cala
+    ("B-repair_reflect",         "WP3", {"repair": "reflect"}),         # Cala
     # ("B+recomb",       "WP4", {"recombine": True}),        # Agata
-    # ("B+final_polish", "WP5", {"local_search": "final"}),  # Martin
+    ("B+final_polish",       "WP5", {"local_search": "final"}),        # Martin
+    ("B+interleaved_polish", "WP5", {"local_search": "interleaved"}),  # Martin
 ]
 
 
@@ -104,7 +111,7 @@ def run_one(overrides, n_circles, seed):
 
     kwargs = dict(BASELINE)
     kwargs.update(overrides)
-    EvoPy(
+    result_genotype = EvoPy(
         fitness, n_circles * 2,
         reporter=reporter, maximize=True, bounds=(0, 1),
         generations=100000,                      # never the binding cap
@@ -115,12 +122,15 @@ def run_one(overrides, n_circles, seed):
 
     evals = np.array([e for e, _ in trace])
     best = np.array([b for _, b in trace])
-    final_best = float(best[-1])
+    # Evaluate the returned genotype: for "final" polish this captures the
+    # post-polish fitness that was never recorded by the reporter.
+    final_best = float(fitness(result_genotype)) if result_genotype is not None else float(best[-1])
 
     row = {
         "treatment": None, "wp": None, "n_circles": n_circles, "seed": seed,
         "strategy": kwargs["strategy"].name, "init": kwargs["init"],
         "selection_scheme": kwargs["selection_scheme"],
+        "repair": kwargs.get("repair", "random"),
         "archive_mode": kwargs.get("archive_mode", "off"),
         "final_best": round(final_best, 8),
         "final_gap": round((target - final_best) / target, 8),
@@ -137,7 +147,7 @@ def run_one(overrides, n_circles, seed):
 def main():
     os.makedirs(RESULTS_DIR, exist_ok=True)
     fields = ["treatment", "wp", "n_circles", "seed", "strategy", "init",
-              "selection_scheme", "archive_mode", "final_best", "final_gap",
+              "selection_scheme", "archive_mode", "repair", "final_best", "final_gap",
               "total_evals", "total_generations"] + [f"evals_to_{t:.0e}" for t in TOLS]
 
     n_total = len(TREATMENTS) * len(CIRCLE_SIZES) * N_SEEDS
