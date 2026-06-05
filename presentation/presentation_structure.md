@@ -13,22 +13,8 @@
 | Combined algorithm | 7 | Sequential ablation V1→V4 |
 | Conclusion | 8 | — |
 
----
 
-## Slide 1 — Problem: Circles in a Square
-
-**Goal:** Pack *n* circles inside a unit square, maximising the minimum pairwise distance between centres.
-
-**Show:**
-- Visual of optimal configurations for n = 7, 10, 15, 20 (from Packomania reference values)
-- Animation or side-by-side: bad random packing → known optimum
-- Why it's hard: broad plateaus in the fitness landscape — only the *binding pair* of circles contributes to fitness, all other moves are silent
-
-**One sentence framing:** *"A deceptively simple problem with a rugged landscape — the right algorithmic choices matter a lot."*
-
----
-
-## Slide 2 — Fixed Baseline B + Measurement Method (WP1)
+## Slide 1 — Measurement Method (WP1)
 
 **Goal:** Define the reference point and explain how every claim is validated.
 
@@ -55,7 +41,7 @@
 
 ---
 
-## Slide 3 — WP3: Constraint Handling (Cala)
+## Slide 2 — WP3: Constraint Handling (Cala)
 
 **Benchmark:** OFAT — treatments `B-repair_clip` and `B-repair_reflect` vs frozen B (random-resample)
 
@@ -64,10 +50,12 @@
 - OFAT plots (p + A12)
   - ✅ **Exists** — convergence curves and gap boxplots per repair mode: `benchmark_Cala.py` (`plot()` method)
   - ✅ **Exists** — forest plot row: `plot_ofat.py` from WP1 infra, reads `results/comparisons.csv`
+ 
+- How do you explain this change?
 
 ---
 
-## Slide 4 — WP2: Selection & Elitist Archive (Ivan)
+## Slide 3 — WP2: Selection & Elitist Archive (Ivan)
 
 **Benchmark:** OFAT — treatments `B+archive` and `B+plus` vs frozen B
 
@@ -77,10 +65,11 @@
   - 🆕 **Needs new code** — fitness trace comparing `(μ,λ)` vs `(μ+λ)` vs archive (monotonicity check). No existing benchmark plots this three-way comparison.
   - 🆕 **Needs new code** — archive utilisation plot (how often the reintroduced individual becomes generation best). No existing script tracks this.
   - ✅ **Exists** — forest plot row: `plot_ofat.py` from WP1 infra
+- - How do you explain this change?
 
 ---
 
-## Slide 5 — WP4: Recombination & σ-Strategy (Agata)
+## Slide 4 — WP4: Recombination & σ-Strategy (Agata)
 
 **Benchmark:** OFAT — treatments `B+recomb` (circle-pair operator) and σ-strategy arms vs frozen B
 
@@ -89,10 +78,11 @@
 - OFAT plots (p + A12)
   - 🆕 **Needs new code** — bar chart of median final_gap for single/multiple/full across n (σ-ablation). Not produced by any existing benchmark.
   - ✅ **Exists** — forest plot row for recombination: `plot_ofat.py` from WP1 infra
+- How do you explain this change?
 
 ---
 
-## Slide 6 — WP5: Gradient Hybrid (Martin)
+## Slide 5 — WP5: Gradient Hybrid (Martin)
 
 **Benchmark:** OFAT — treatments `B+final_polish` and `B+interleaved_polish` vs frozen B. Gradient evals charged to the 100k eval budget.
 
@@ -101,10 +91,11 @@
 - OFAT plots (p + A12)
   - 🆕 **Needs new code** — convergence curves for pure EA vs final_polish vs interleaved_polish at n=15 and n=20. No existing benchmark covers the gradient modes.
   - ✅ **Exists** — forest plot row: `plot_ofat.py` from WP1 infra
+- How do you explain this change?
 
 ---
 
-## Slide 7 — Combined Algorithm: Stacking the Improvements
+## Slide 6 — Combined Algorithm: Stacking the Improvements
 
 **Benchmark:** Sequential ablation chain — same `ofat_benchmark.py` runner, TREATMENTS replaced by V1→V4 explicit configs. Same budget: 25 seeds × n∈{7,10,15,20} × 100k evals.
 
