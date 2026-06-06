@@ -45,7 +45,85 @@ def circles_in_a_square(individual):
                               + math.pow((individual[i + 1] - individual[j + 1]), 2)))
     return min(distances)
 
+def draw_contact_spokes(ax, points_scaled, radius, tol=1e-6):
+    """
+    Draw Packomania-style contact spokes:
+    one radius from the circle center to every contact point.
+    """
+    if tol is None:
+        tol = radius * 1e-3
 
+    n = len(points_scaled)
+
+    for i in range(n):
+        x, y = points_scaled[i]
+
+        # -------------------------
+        # Circle-circle contacts
+        # -------------------------
+        for j in range(n):
+            if i == j:
+                continue
+
+            dx = points_scaled[j, 0] - x
+            dy = points_scaled[j, 1] - y
+
+            d = np.hypot(dx, dy)
+
+            if abs(d - 2 * radius) <= tol:
+                ux = dx / d
+                uy = dy / d
+
+                # spoke from center to circumference
+                ax.plot(
+                    [x, x + radius/2 * ux],
+                    [y, y + radius/2 * uy],
+                    color="darkblue",
+                    lw=1,
+                    zorder=5,
+                )
+
+        # -------------------------
+        # Wall contacts
+        # -------------------------
+        if abs(x - radius) <= tol:
+            ax.plot(
+                [x, x - radius/2],
+                [y, y],
+                color="darkblue",
+                lw=1,
+                zorder=5,
+            )
+
+        if abs(x - (1 - radius)) <= tol:
+            ax.plot(
+                [x, x + radius/2],
+                [y, y],
+                color="darkblue",
+                lw=1,
+                zorder=5,
+            )
+
+        if abs(y - radius) <= tol:
+            ax.plot(
+                [x, x],
+                [y, y - radius/2],
+                color="darkblue",
+                lw=1,
+                zorder=5,
+            )
+
+        if abs(y - (1 - radius)) <= tol:
+            ax.plot(
+                [x, x],
+                [y, y + radius/2],
+                color="darkblue",
+                lw=1,
+                zorder=5,
+            )
+
+        # center marker
+        ax.plot(x, y, "wo", ms=2, mec="darkblue", mew=0.5, zorder=6)
 class CirclesInASquare:
     def __init__(self, n_circles, output_statistics=True, plot_sols=False, print_sols=False):
         self.print_sols = print_sols
@@ -180,6 +258,8 @@ class CirclesInASquare:
 
         return best_solution
     
+
+    
     def plot_final_packing(self, genotype, save_path=None):
             fitness_fn = circles_in_a_square_scipy if self.n_circles >= 12 else circles_in_a_square
             fitness = fitness_fn(genotype)
@@ -199,6 +279,8 @@ class CirclesInASquare:
                 ax.plot(x, y, "k.", markersize=4)
                 ax.text(x, y, str(i + 1), ha="center", va="center",
                         fontsize=8, fontweight="bold")
+            
+            draw_contact_spokes(ax, points_scaled, max_radius)
 
             optimum = self.get_target()
             gap = (optimum - fitness) / optimum * 100
@@ -218,20 +300,20 @@ class CirclesInASquare:
                 plt.show()
 
 
+
 if __name__ == "__main__":
     ### WP3 Results ###################################################################
     # # Clip — best seed is 0
-    # runner_clip = CirclesInASquare(15, output_statistics=False)
-    # best_clip = runner_clip.run_evolution_strategies(seed=0, repair="clip")
-    # runner_clip.plot_final_packing(best_clip, save_path="best_packing_n15_clip_seed0.png")
+    runner_clip = CirclesInASquare(15, output_statistics=False)
+    best_clip = runner_clip.run_evolution_strategies(seed=0, repair="clip")
+    runner_clip.plot_final_packing(best_clip, save_path="best_packing_n15_clip_seed0.png")
 
     # # Reflect — best seed is 7
-    # runner_reflect = CirclesInASquare(15, output_statistics=False)
-    # best_reflect = runner_reflect.run_evolution_strategies(seed=7, repair="reflect")
-    # runner_reflect.plot_final_packing(best_reflect, save_path="best_packing_n15_reflect_seed7.png")
+    runner_reflect = CirclesInASquare(15, output_statistics=False)
+    best_reflect = runner_reflect.run_evolution_strategies(seed=7, repair="reflect")
+    runner_reflect.plot_final_packing(best_reflect, save_path="best_packing_n15_reflect_seed7.png")
 
-    # Random — best seed is 7
+    #Random — best seed is 7
     runner_reflect = CirclesInASquare(15, output_statistics=False)
     best_reflect = runner_reflect.run_evolution_strategies(seed=17, repair="random")
     runner_reflect.plot_final_packing(best_reflect, save_path="best_packing_n15_random_seed17.png")
-
