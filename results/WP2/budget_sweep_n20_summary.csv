@@ -1,0 +1,5 @@
+budget,comma_gap_pct,plus_gap_pct,mwu_p,a12,comma_ceiling_gap_pct,winner,significant
+100000,62.368,53.834,0.00067,0.133,50.73,plus,True
+200000,61.243,53.044,0.00067,0.133,48.725,plus,True
+300000,60.96,52.243,0.00067,0.133,48.58,plus,True
+500000,61.702,51.738,0.00067,0.133,48.214,plus,True
