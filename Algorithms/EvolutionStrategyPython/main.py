@@ -127,20 +127,48 @@ class CirclesInASquare:
 
         return values_to_reach[self.n_circles - 2]
 
+    # def run_evolution_strategies(self, seed=None, repair="random"):
+    #     callback = self.statistics_callback if self.output_statistics else None
+
+    #     evopy = EvoPy(
+    #         circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,  # Fitness function
+    #         self.n_circles * 2,  # Number of parameters
+    #         reporter=callback,  # Prints statistics at each generation
+    #         maximize=True,
+    #         generations=1000,
+    #         bounds=(0, 1),
+    #         target_fitness_value=self.get_target(),
+    #         max_evaluations=1e5,
+    #         strategy=Strategy.SINGLE_VARIANCE,  # matches the OFAT baseline B
+    #         num_children=7,  # lambda/mu = 210/30 = 7 (BSw95 ratio); matches benchmark.py
+    #         random_seed=seed,
+    #         repair=repair,
+    #     )
+
+    #     best_solution = evopy.run()
+
+    #     if self.plot_best_sol:
+    #         plt.close()
+
+    #     return best_solution
+    
     def run_evolution_strategies(self, seed=None, repair="random"):
         callback = self.statistics_callback if self.output_statistics else None
 
         evopy = EvoPy(
-            circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,  # Fitness function
-            self.n_circles * 2,  # Number of parameters
-            reporter=callback,  # Prints statistics at each generation
+            circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,
+            self.n_circles * 2,
+            reporter=callback,
             maximize=True,
             generations=1000,
+            population_size=30,
+            num_children=7,           # lambda/mu = 210/30 = 7, matches benchmark
             bounds=(0, 1),
             target_fitness_value=self.get_target(),
             max_evaluations=1e5,
-            strategy=Strategy.SINGLE_VARIANCE,  # matches the OFAT baseline B
-            num_children=7,  # lambda/mu = 210/30 = 7 (BSw95 ratio); matches benchmark.py
+            strategy=Strategy.SINGLE_VARIANCE,
+            selection_scheme="comma", # matches benchmark
+            init="lhs",               # matches benchmark
             random_seed=seed,
             repair=repair,
         )
@@ -152,15 +180,13 @@ class CirclesInASquare:
 
         return best_solution
     
-    def plot_final_packing(self, genotype):
-            fitness = circles_in_a_square(genotype)
+    def plot_final_packing(self, genotype, save_path=None):
+            fitness_fn = circles_in_a_square_scipy if self.n_circles >= 12 else circles_in_a_square
+            fitness = fitness_fn(genotype)
             points = np.reshape(genotype, (-1, 2))
             max_radius = fitness / (2 + 2 * fitness)
             scale = 1.0 - 2 * max_radius
             points_scaled = points * scale + max_radius
-
-            # Rescale centres from [0,1] to [r, 1-r] so all circles fit inside
-            
 
             fig, ax = plt.subplots(figsize=(6, 6))
             ax.set_aspect("equal")
@@ -184,10 +210,28 @@ class CirclesInASquare:
             ax.set_xlabel("x")
             ax.set_ylabel("y")
             plt.tight_layout()
-            plt.show()
+
+            if save_path:
+                plt.savefig(save_path, dpi=150, bbox_inches="tight")
+                plt.close(fig)
+            else:
+                plt.show()
 
 
 if __name__ == "__main__":
-    runner = CirclesInASquare(7, output_statistics=False)
-    best = runner.run_evolution_strategies(seed=2, repair="clip")
-    runner.plot_final_packing(best)
+    ### WP3 Results ###################################################################
+    # # Clip — best seed is 0
+    # runner_clip = CirclesInASquare(15, output_statistics=False)
+    # best_clip = runner_clip.run_evolution_strategies(seed=0, repair="clip")
+    # runner_clip.plot_final_packing(best_clip, save_path="best_packing_n15_clip_seed0.png")
+
+    # # Reflect — best seed is 7
+    # runner_reflect = CirclesInASquare(15, output_statistics=False)
+    # best_reflect = runner_reflect.run_evolution_strategies(seed=7, repair="reflect")
+    # runner_reflect.plot_final_packing(best_reflect, save_path="best_packing_n15_reflect_seed7.png")
+
+    # Random — best seed is 7
+    runner_reflect = CirclesInASquare(15, output_statistics=False)
+    best_reflect = runner_reflect.run_evolution_strategies(seed=17, repair="random")
+    runner_reflect.plot_final_packing(best_reflect, save_path="best_packing_n15_random_seed17.png")
+
