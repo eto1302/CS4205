@@ -1,0 +1,235 @@
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+
+try:
+    from scipy.stats import mannwhitneyu
+    SCIPY_OK = True
+except Exception:
+    SCIPY_OK = False
+
+
+ROOT = Path(r"C:\Users\agata\OneDrive\Pulpit\uni\! Master - StudyGuides\Q4\Evolutionary Algorithms\Assignment\CS4205")
+SIGMA_DIR = ROOT / "benchmark_wp4_results" / "benchmark_sigma_alln_medium_2026-06-04_20-13-50"
+
+CANDIDATES = [
+    SIGMA_DIR / "per_run.csv",
+    SIGMA_DIR / "per_run.csv (2)",
+    SIGMA_DIR / "per_run_sigma.csv",
+    SIGMA_DIR / "per_run_sigma.csv (1)",
+]
+
+PER_RUN = next((p for p in CANDIDATES if p.exists()), None)
+if PER_RUN is None:
+    raise FileNotFoundError(f"No per_run_sigma.csv/per_run.csv found in {SIGMA_DIR}")
+
+OUT = ROOT / "benchmark_wp4_results" / "slide_figures"
+OUT.mkdir(parents=True, exist_ok=True)
+
+METRIC = "final_gap"
+BASELINE_STRATEGY = "SINGLE_VARIANCE"
+
+
+def clean_strategy_column(df):
+    df = df.copy()
+    df["treatment"] = df["treatment"].astype(str).str.strip()
+    df["strategy"] = df["strategy"].astype(str).str.strip()
+
+    # IMPORTANT: script called FULL_VARIANCE "baseline"; we undo that here.
+    df.loc[df["treatment"].eq("baseline"), "strategy"] = "FULL_VARIANCE"
+    df.loc[df["strategy"].eq("baseline"), "strategy"] = "FULL_VARIANCE"
+
+    return df
+
+
+def marker(p):
+    if p is None:
+        return "NA"
+    return "***" if p < 1e-3 else "**" if p < 1e-2 else "*" if p < 5e-2 else "ns"
+
+
+def a12_lower_is_better(arm, base):
+    arm = np.asarray(arm, dtype=float)
+    base = np.asarray(base, dtype=float)
+    lt = sum((arm < b).sum() for b in base)
+    eq = sum((arm == b).sum() for b in base)
+    return (lt + 0.5 * eq) / (len(arm) * len(base))
+
+
+def boot_ci(base, arm, n_boot=3000, seed=0):
+    rng = np.random.default_rng(seed)
+    base = np.asarray(base, dtype=float)
+    arm = np.asarray(arm, dtype=float)
+    diffs = np.empty(n_boot)
+
+    for i in range(n_boot):
+        b = rng.choice(base, len(base), replace=True)
+        a = rng.choice(arm, len(arm), replace=True)
+        diffs[i] = np.median(b) - np.median(a)
+
+    return float(np.percentile(diffs, 2.5)), float(np.percentile(diffs, 97.5))
+
+
+def compute_forest_rows(df, arm_strategy):
+    rows = []
+
+    for n in sorted(df["n_circles"].unique()):
+        base = df[
+            (df["n_circles"] == n) &
+            (df["strategy"] == BASELINE_STRATEGY)
+        ][METRIC].dropna().to_numpy()
+
+        arm = df[
+            (df["n_circles"] == n) &
+            (df["strategy"] == arm_strategy)
+        ][METRIC].dropna().to_numpy()
+
+        if len(base) == 0 or len(arm) == 0:
+            print(f"Skipping n={n}, arm={arm_strategy}: base={len(base)}, arm={len(arm)}")
+            continue
+
+        effect = float(np.median(base) - np.median(arm))
+        ci_lo, ci_hi = boot_ci(base, arm, seed=1000 + int(n))
+
+        if SCIPY_OK:
+            p = float(mannwhitneyu(arm, base, alternative="two-sided").pvalue)
+        else:
+            p = None
+
+        rows.append({
+            "treatment": arm_strategy,
+            "wp": "WP4",
+            "n_circles": int(n),
+            "metric": METRIC,
+            "n_base": len(base),
+            "n_arm": len(arm),
+            "base_median": float(np.median(base)),
+            "arm_median": float(np.median(arm)),
+            "effect": effect,
+            "ci_lo": ci_lo,
+            "ci_hi": ci_hi,
+            "a12": a12_lower_is_better(arm, base),
+            "p_value": p,
+            "marker": marker(p),
+        })
+
+    return pd.DataFrame(rows)
+
+
+def plot_forest(rows, out_name):
+    if rows.empty:
+        raise ValueError(f"No rows to plot for {out_name}")
+
+    rows = rows.sort_values(["treatment", "n_circles"], ascending=[True, True])
+
+    # Slide-friendly: only 4 rows, so make it compact but readable
+    fig, ax = plt.subplots(figsize=(7.2, 3.0))
+    ys = list(range(len(rows)))[::-1]
+
+    short_names = {
+        "MULTIPLE_VARIANCE": "MULTIPLE",
+        "FULL_VARIANCE": "FULL",
+        "SINGLE_VARIANCE": "SINGLE",
+    }
+
+    for y, (_, r) in zip(ys, rows.iterrows()):
+        sig = r["marker"] != "ns"
+
+        ax.plot(
+            [r["ci_lo"], r["ci_hi"]],
+            [y, y],
+            color="#4C72B0",
+            lw=2.4,
+            alpha=0.85,
+        )
+        ax.scatter(
+            [r["effect"]],
+            [y],
+            s=105,
+            zorder=3,
+            edgecolor="black",
+            facecolor="#4C72B0" if sig else "white",
+            linewidth=1.1,
+        )
+
+        ax.annotate(
+            f"{r['marker']}  A12={r['a12']:.2f}",
+            (r["ci_hi"], y),
+            textcoords="offset points",
+            xytext=(7, 0),
+            va="center",
+            fontsize=9,
+            color="#222" if sig else "#888",
+        )
+
+    ax.axvline(0, color="black", lw=1.2)
+
+    # Baseline label, but not too high / not colliding with title
+    ax.annotate(
+        "baseline",
+        xy=(0, 1.015),
+        xycoords=("data", "axes fraction"),
+        ha="center",
+        va="bottom",
+        fontsize=9,
+    )
+
+    ax.set_yticks(ys)
+    ax.set_yticklabels(
+        [
+            f"{short_names.get(r['treatment'], r['treatment'])}  (n={int(r['n_circles'])})"
+            for _, r in rows.iterrows()
+        ],
+        fontsize=10,
+    )
+
+    ax.set_xlabel(
+        f"improvement in median {METRIC} vs baseline  (right = better)",
+        fontsize=10,
+    )
+    ax.set_title(
+        f"OFAT forest plot — {METRIC}\n"
+        f"filled = significant (p<0.05), hollow = ns",
+        fontsize=10.5,
+        pad=10,
+    )
+    ax.grid(True, axis="x", alpha=0.25)
+
+    # No legend: title already explains filled/hollow and legend wastes slide space
+    fig.tight_layout()
+
+    out = OUT / out_name
+    fig.savefig(out, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"saved {out}")
+
+
+df = pd.read_csv(PER_RUN)
+df = clean_strategy_column(df)
+
+print(f"Using: {PER_RUN}")
+print("\nCounts after cleaning:")
+print(df.groupby(["treatment", "strategy"]).size())
+print("\nStrategies found:", sorted(df["strategy"].unique()))
+
+required = {"n_circles", "strategy", METRIC}
+missing = required - set(df.columns)
+if missing:
+    raise ValueError(f"Missing required columns: {missing}")
+
+df = df[df["strategy"].isin(["SINGLE_VARIANCE", "MULTIPLE_VARIANCE", "FULL_VARIANCE"])].copy()
+
+multiple_rows = compute_forest_rows(df, "MULTIPLE_VARIANCE")
+multiple_rows.to_csv(OUT / "sigma_forest_multiple_vs_single_values.csv", index=False)
+plot_forest(multiple_rows, "sigma_forest_multiple_vs_single.png")
+
+full_rows = compute_forest_rows(df, "FULL_VARIANCE")
+full_rows.to_csv(OUT / "sigma_forest_full_vs_single_values.csv", index=False)
+plot_forest(full_rows, "sigma_forest_full_vs_single.png")
+
+print("\nDone.")
+print(f"Output folder: {OUT}")
