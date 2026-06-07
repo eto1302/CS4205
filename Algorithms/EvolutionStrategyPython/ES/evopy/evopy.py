@@ -23,7 +23,8 @@ class EvoPy:
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
                  max_evaluations=None, bounds=None, selection_scheme="plus",
-                 init_sigma_scale=0.3, init="lhs", local_search="none", local_search_k=10):
+                 init_sigma_scale=0.3, init="lhs", local_search="none", local_search_k=10,
+                 local_search_final_budget=None):
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -49,6 +50,8 @@ class EvoPy:
         :param local_search: "none" (default), "final" (one L-BFGS-B polish after the loop),
                              or "interleaved" (polish best every local_search_k generations)
         :param local_search_k: interval in generations for "interleaved" local search
+        :param local_search_final_budget: evaluations reserved for the final L-BFGS-B call;
+                                          defaults to max_evaluations // 10 when None
         """
         self.fitness_function = fitness_function
         self.individual_length = individual_length
@@ -73,7 +76,10 @@ class EvoPy:
         self.init = init
         self.local_search = local_search
         self.local_search_k = local_search_k
+        self.local_search_final_budget = local_search_final_budget
         self.evaluations = 0
+        self._ea_max_evals = None   # set in run(); EA stops here, leaving room for polish
+        self._polish_maxfun = None  # set in run(); budget handed to L-BFGS-B
         # Population-level sigma for the 1/5 rule variant (set in run()).
         self._sigma_1_5 = None
 
@@ -84,13 +90,14 @@ class EvoPy:
         :param best: the current best individual
         :return: whether the algorithm should be terminated early
         """
+        ea_cap = self._ea_max_evals if self._ea_max_evals is not None else self.max_evaluations
         return (self.max_run_time is not None
                 and (time.time() - start_time) > self.max_run_time) \
                or \
                (self.target_fitness_value is not None
                 and abs(best.fitness - self.target_fitness_value) < self.target_tolerance) \
-               or (self.max_evaluations is not None
-                and self.evaluations >= self.max_evaluations)
+               or (ea_cap is not None
+                and self.evaluations >= ea_cap)
 
     def run(self):
         """Run the evolutionary strategy algorithm.
@@ -99,6 +106,18 @@ class EvoPy:
         """
         if self.individual_length == 0:
             return None
+
+        # Reserve a slice of the budget for the final L-BFGS-B call so it
+        # actually gets to run (default: 10% of max_evaluations).
+        if self.local_search == "final" and self.max_evaluations is not None:
+            budget = self.local_search_final_budget
+            if budget is None:
+                budget = max(self.individual_length * 10, self.max_evaluations // 10)
+            self._ea_max_evals = self.max_evaluations - budget
+            self._polish_maxfun = budget
+        else:
+            self._ea_max_evals = None
+            self._polish_maxfun = None
 
         start_time = time.time()
 
@@ -190,9 +209,12 @@ class EvoPy:
 
         bounds = ([(self.bounds[0], self.bounds[1])] * self.individual_length
                   if self.bounds is not None else None)
-        maxfun = (max(1, self.max_evaluations - self.evaluations)
-                  if self.max_evaluations is not None
-                  else self.individual_length * 200)
+        if self._polish_maxfun is not None:
+            maxfun = self._polish_maxfun
+        else:
+            maxfun = (max(1, self.max_evaluations - self.evaluations)
+                      if self.max_evaluations is not None
+                      else self.individual_length * 200)
 
         result = minimize(objective, genotype.copy(), method="L-BFGS-B",
                           bounds=bounds, options={"maxfun": maxfun})
