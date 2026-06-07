@@ -110,6 +110,8 @@ class EvoPy:
         self._polish_maxfun = None  # set in run(); budget handed to L-BFGS-B
         # Population-level sigma for the 1/5 rule variant (set in run()).
         self._sigma_1_5 = None
+        # Each entry: (evals_at_call, lbfgsb_evals_consumed, fitness_before, fitness_after, improved)
+        self.polish_log = []
                 # Elitist archive (WP2 §4.1): top-K best-ever individuals + stagnation
         # tracking for the "reintroduction" mode. Empty/unused when mode == "off".
         self.archive = []
@@ -264,7 +266,7 @@ class EvoPy:
                 self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std))
 
             if self.local_search == "interleaved" and (generation + 1) % self.local_search_k == 0:
-                polished_g, polished_f = self._lbfgsb_polish(best.genotype)
+                polished_g, polished_f, _ = self._lbfgsb_polish(best.genotype, best.fitness)
                 improved = polished_f > best.fitness if self.maximize else polished_f < best.fitness
                 if improved:
                     best.genotype = polished_g
@@ -275,17 +277,22 @@ class EvoPy:
                 break
 
         if self.local_search == "final":
-            polished_g, polished_f = self._lbfgsb_polish(best.genotype)
+            polished_g, polished_f, _ = self._lbfgsb_polish(best.genotype, best.fitness)
             best.genotype = polished_g
             best.fitness = polished_f
 
         return best.genotype
 
-    def _lbfgsb_polish(self, genotype):
-        """Polish a genotype with L-BFGS-B, charging all evaluations to self.evaluations."""
+    def _lbfgsb_polish(self, genotype, fitness_before):
+        """Polish a genotype with L-BFGS-B, charging all evaluations to self.evaluations.
+
+        Returns (polished_genotype, polished_fitness, lbfgsb_evals_consumed).
+        Also appends an entry to self.polish_log for convergence-curve plotting.
+        """
         from scipy.optimize import minimize
 
         sign = -1.0 if self.maximize else 1.0
+        evals_at_call = self.evaluations
 
         def objective(x):
             self.evaluations += 1
@@ -303,7 +310,10 @@ class EvoPy:
         result = minimize(objective, genotype.copy(), method="L-BFGS-B",
                           bounds=bounds, options={"maxfun": maxfun})
         polished_fitness = -result.fun if self.maximize else result.fun
-        return result.x, polished_fitness
+        lbfgsb_evals = self.evaluations - evals_at_call
+        improved = (polished_fitness > fitness_before) if self.maximize else (polished_fitness < fitness_before)
+        self.polish_log.append((evals_at_call, lbfgsb_evals, fitness_before, polished_fitness, improved))
+        return result.x, polished_fitness, lbfgsb_evals
 
     def _init_population(self):
         # Sensible problem-scaled initial sigma rather than randn() which can give
