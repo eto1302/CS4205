@@ -266,12 +266,22 @@ class EvoPy:
                 self.reporter(ProgressReport(generation, self.evaluations, best.genotype, best.fitness, mean, std))
 
             if self.local_search == "interleaved" and (generation + 1) % self.local_search_k == 0:
-                polished_g, polished_f, _ = self._lbfgsb_polish(best.genotype, best.fitness)
-                improved = polished_f > best.fitness if self.maximize else polished_f < best.fitness
+                # FIX: polish the LIVE current-best population member so the polished
+                # genotype re-enters the search (memetic feedback), then refresh the
+                # archive from it. Previously this polished best=archive[0] — a detached,
+                # often-stale best-ever clone — and injected that old solution into the
+                # population, which broke the polish/EA loop when the archive was on.
+                live = population[0]
+                polished_g, polished_f, _ = self._lbfgsb_polish(live.genotype, live.fitness)
+                improved = polished_f > live.fitness if self.maximize else polished_f < live.fitness
                 if improved:
-                    best.genotype = polished_g
-                    best.fitness = polished_f
-                    population[0] = best
+                    live.genotype = polished_g
+                    live.fitness = polished_f
+                if archive_on:
+                    self._update_archive(population)
+                    best = self.archive[0]
+                else:
+                    best = population[0]
 
             if self._check_early_stop(start_time, best):
                 break
