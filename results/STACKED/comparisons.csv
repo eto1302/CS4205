@@ -1,0 +1,25 @@
+treatment,wp,n_circles,metric,n_base,n_arm,base_median,arm_median,effect,ci_lo,ci_hi,a12,p_value,marker,note
++clip,STACK,7,final_gap,25,25,0.052228,0.028634,0.023593,0.004853,0.032696,0.758,1.78e-03,**,
++clip,STACK,7,evals_to_1e-02,0,7,,,,,,,,,insufficient data (few runs reached target)
++clip,STACK,10,final_gap,25,25,0.133756,0.062751,0.071004,0.043058,0.098526,0.867,8.86e-06,***,
++clip,STACK,10,evals_to_1e-02,0,3,,,,,,,,,insufficient data (few runs reached target)
++clip,STACK,15,final_gap,25,25,0.618617,0.14761,0.471007,0.393579,0.501735,0.976,8.28e-09,***,
++clip,STACK,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
++clip,STACK,20,final_gap,25,25,0.641647,0.175443,0.466204,0.433758,0.492983,1.0,1.42e-09,***,
++clip,STACK,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
++clip+polish,STACK,7,final_gap,25,25,0.052228,0.029137,0.02309,0.003769,0.03084,0.757,1.91e-03,**,
++clip+polish,STACK,7,evals_to_1e-02,0,6,,,,,,,,,insufficient data (few runs reached target)
++clip+polish,STACK,10,final_gap,25,25,0.133756,0.054058,0.079698,0.055703,0.106137,0.954,4.00e-08,***,
++clip+polish,STACK,10,evals_to_1e-02,0,2,,,,,,,,,insufficient data (few runs reached target)
++clip+polish,STACK,15,final_gap,25,25,0.618617,0.127921,0.490696,0.416133,0.519045,0.989,3.26e-09,***,
++clip+polish,STACK,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
++clip+polish,STACK,20,final_gap,25,25,0.641647,0.172591,0.469055,0.426838,0.503607,0.998,1.60e-09,***,
++clip+polish,STACK,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
++clip+polish+archive,STACK,7,final_gap,25,25,0.052228,0.033214,0.019014,0.005392,0.031084,0.806,2.11e-04,***,
++clip+polish+archive,STACK,7,evals_to_1e-02,0,7,,,,,,,,,insufficient data (few runs reached target)
++clip+polish+archive,STACK,10,final_gap,25,25,0.133756,0.071285,0.062471,0.042679,0.09665,0.934,1.45e-07,***,
++clip+polish+archive,STACK,10,evals_to_1e-02,0,2,,,,,,,,,insufficient data (few runs reached target)
++clip+polish+archive,STACK,15,final_gap,25,25,0.618617,0.155026,0.463592,0.395355,0.497879,0.974,9.29e-09,***,
++clip+polish+archive,STACK,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
++clip+polish+archive,STACK,20,final_gap,25,25,0.641647,0.183707,0.45794,0.418635,0.485124,0.998,1.60e-09,***,
++clip+polish+archive,STACK,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
