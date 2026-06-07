@@ -25,14 +25,14 @@ import numpy as np
 from ES.evopy import EvoPy, Strategy
 
 # ── config (env-overridable so the smoke test is cheap) ──────────────────────
-CIRCLE_SIZES = [int(x) for x in os.environ.get("WP1_NS", "7, 10, 15, 20").split(",")]
+CIRCLE_SIZES = [int(x) for x in os.environ.get("WP1_NS", "10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20").split(",")]
 N_SEEDS      = int(os.environ.get("WP1_SEEDS", "25"))
 MAX_EVALS    = int(os.environ.get("WP1_EVALS", "100000"))
 POPULATION   = 30
 NUM_CHILDREN = 7                      # lambda = 210, lambda/mu = 7 (BSw95)
 TOLS         = [1e-2, 1e-3, 1e-5]
 RESULTS_DIR  = "results"
-PER_RUN_CSV  = os.path.join(RESULTS_DIR, "per_run.csv")
+PER_RUN_CSV  = os.path.join(RESULTS_DIR, "per_run_KUKI.csv")
 
 # Packomania optimal min pairwise distance, n = 2..20
 _TARGETS = [
@@ -89,20 +89,27 @@ def run_one(overrides, n_circles, seed):
 
     kwargs = dict(BASELINE)
     kwargs.update(overrides)
-    result_genotype = EvoPy(
+    es = EvoPy(
         fitness, n_circles * 2,
         reporter=reporter, maximize=True, bounds=(0, 1),
         generations=100000,                      # never the binding cap
         max_evaluations=MAX_EVALS,               # the only stop criterion
         random_seed=seed,
         **kwargs,
-    ).run()
+    )
+    result_genotype = es.run()
 
     evals = np.array([e for e, _ in trace])
     best = np.array([b for _, b in trace])
     # Evaluate the returned genotype: for "final" polish this captures the
     # post-polish fitness that was never recorded by the reporter.
     final_best = float(fitness(result_genotype)) if result_genotype is not None else float(best[-1])
+
+    # L-BFGS-B stats from polish_log: (evals_at_call, lbfgsb_evals, fit_before, fit_after, improved)
+    plog = es.polish_log
+    lbfgsb_calls      = len(plog)
+    lbfgsb_evals_total = sum(e for _, e, _, _, _ in plog) if plog else 0
+    lbfgsb_evals_mean  = round(lbfgsb_evals_total / lbfgsb_calls, 1) if plog else ""
 
     row = {
         "treatment": None, "wp": None, "n_circles": n_circles, "seed": seed,
@@ -112,6 +119,9 @@ def run_one(overrides, n_circles, seed):
         "final_gap": round((target - final_best) / target, 8),
         "total_evals": int(evals[-1]),
         "total_generations": len(trace),
+        "lbfgsb_calls": lbfgsb_calls,
+        "lbfgsb_evals_total": lbfgsb_evals_total,
+        "lbfgsb_evals_mean": lbfgsb_evals_mean,
     }
     # fixed-target columns: first eval where |best - target| < tol; "" if never
     for tol in TOLS:
@@ -124,7 +134,8 @@ def main():
     os.makedirs(RESULTS_DIR, exist_ok=True)
     fields = ["treatment", "wp", "n_circles", "seed", "strategy", "init",
               "selection_scheme", "final_best", "final_gap", "total_evals",
-              "total_generations"] + [f"evals_to_{t:.0e}" for t in TOLS]
+              "total_generations", "lbfgsb_calls", "lbfgsb_evals_total", "lbfgsb_evals_mean",
+              ] + [f"evals_to_{t:.0e}" for t in TOLS]
 
     n_total = len(TREATMENTS) * len(CIRCLE_SIZES) * N_SEEDS
     print(f"OFAT sweep: {len(TREATMENTS)} treatments x {len(CIRCLE_SIZES)} n x "
