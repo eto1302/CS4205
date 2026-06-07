@@ -1,0 +1,25 @@
+treatment,wp,n_circles,metric,n_base,n_arm,base_median,arm_median,effect,ci_lo,ci_hi,a12,p_value,marker,note
+B+plus,WP2,7,final_gap,25,25,0.052228,0.046092,0.006135,-0.012468,0.022798,0.558,4.85e-01,ns,
+B+plus,WP2,7,evals_to_1e-02,0,4,,,,,,,,,insufficient data (few runs reached target)
+B+plus,WP2,10,final_gap,25,25,0.133756,0.363649,-0.229893,-0.253412,-0.173034,0.234,1.28e-03,**,
+B+plus,WP2,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+plus,WP2,15,final_gap,25,25,0.618617,0.478835,0.139782,0.061008,0.162983,0.72,7.86e-03,**,
+B+plus,WP2,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+plus,WP2,20,final_gap,25,25,0.641647,0.54752,0.094126,0.080035,0.12078,0.88,4.26e-06,***,
+B+plus,WP2,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_book,WP2,7,final_gap,25,25,0.052228,0.052228,0.0,-0.013893,0.013893,0.508,9.30e-01,ns,
+B+arch_book,WP2,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_book,WP2,10,final_gap,25,25,0.133756,0.133756,0.0,-0.027933,0.031265,0.515,8.61e-01,ns,
+B+arch_book,WP2,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_book,WP2,15,final_gap,25,25,0.618617,0.467902,0.150715,0.078528,0.190528,0.762,1.51e-03,**,
+B+arch_book,WP2,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_book,WP2,20,final_gap,25,25,0.641647,0.526259,0.115388,0.09328,0.144683,0.89,2.30e-06,***,
+B+arch_book,WP2,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_reintro,WP2,7,final_gap,25,25,0.052228,0.052228,0.0,-0.013893,0.016725,0.526,7.64e-01,ns,
+B+arch_reintro,WP2,7,evals_to_1e-02,0,1,,,,,,,,,insufficient data (few runs reached target)
+B+arch_reintro,WP2,10,final_gap,25,25,0.133756,0.133756,0.0,-0.027933,0.035217,0.522,7.93e-01,ns,
+B+arch_reintro,WP2,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_reintro,WP2,15,final_gap,25,25,0.618617,0.477033,0.141585,0.06543,0.301415,0.762,1.51e-03,**,
+B+arch_reintro,WP2,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B+arch_reintro,WP2,20,final_gap,25,25,0.641647,0.522652,0.118995,0.097369,0.144985,0.892,2.09e-06,***,
+B+arch_reintro,WP2,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)

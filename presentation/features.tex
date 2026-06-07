@@ -1,0 +1,123 @@
+{
+  \renewcommand{\bginsert}{\hfill\raisebox{-0.4\paperheight}{\color{tud LightPurple}%
+    \clap{\hspace*{0.8\paperwidth}\includegraphics[width=2.1\paperwidth]{figures/Library_TUDelft_sunny.jpg}}}\hfill}
+  \renewcommand{\sectionsubtitle}{Hope you will be inspired!}
+  \section{Random Subset of Features}
+}
+
+
+{
+  \footerinfootnotestrue
+  \begin{frame}{Citing}
+    If you happen to give a presentation with an older projector, you can set the aspect ratio to 4:3 using the documentclass option aspectratio=43.
+
+    To make a presentation with citations easier to follow, a footnote will show the full reference:
+
+    Rivers and sweet tea do unexpected things.\cite{Einstein1926}
+  \end{frame}
+}
+
+\begin{frame}{Columns}
+  \begin{columns}[T, onlytextwidth]
+    \begin{column}{.45\textwidth}
+      Short lines of text work well in a column.
+      You can combine a text column with images, where the \texttt{\textbackslash absimage}
+      command can be used to place a picture at an exact location, over other elements.
+
+      To make sure the columns are top-aligned, and margins don't jump between pages,
+      you can add the optional arguments \texttt{[T, onlytextwidth]} to the
+      \texttt{\textbackslash columns} environment.
+    \end{column}
+    \begin{column}{.45\textwidth}
+      \color{tud Turquoise}
+      Let's attempt to place an image on top of this square:
+
+      % square filling the column
+      \rule{1\columnwidth}{1\columnwidth}
+      % place an image
+      % horizontal position = 73%
+      % vertical position = 45%
+      % width = 40% of page
+      \absimage{.74, .55}{.35}{tud-logo.pdf}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}{Grid}
+  \grid
+  The command \texttt{\textbackslash grid} can be used to add a grid to the slide,
+  which makes it easier to place elements at a specific location.
+
+  The grid applies to \texttt{tikz}; \texttt{textpos} has the origin at the upper left.
+  
+  \begin{abstikz}
+    \draw (0.75, 0.5) circle (0.5ex);
+    \node[anchor=south west] at (0.75, 0.5) {(0.75, 0.5)};
+  \end{abstikz}%
+\end{frame}
+
+
+\begin{frame}{`Blocks'}
+  \begin{columns}[onlytextwidth]
+    \begin{column}{0.45\textwidth}
+      \begin{block}{Default block}
+        \begin{itemize}
+          \item item 1
+          \item item 2
+        \end{itemize}
+      \end{block}
+      \begin{alertblock}{Alert block}
+        \begin{enumerate}
+          \item Sugar in a stirred cup of tea gathers in the middle.
+          \item Rivers often take a detour through flat terrain.
+        \end{enumerate}
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \begin{exampleblock}{Example block}
+        \center
+        \input{mass-spring.tikz}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}
+  \minipage[t]{\linewidth}
+  \frametitle{List styling}
+  In beamer, enumerations and itemizations can consist of three levels:
+  \begin{itemize}
+    \item One
+    \begin{itemize}
+    \item Two
+    \begin{itemize}
+      \item Three
+    \end{itemize}
+    \end{itemize}
+  \end{itemize}
+  \begin{enumerate}
+    \item One
+    \begin{enumerate}
+    \item Two
+    \begin{enumerate}
+      \item Three
+    \end{enumerate}
+    \end{enumerate}
+  \end{enumerate}
+  \endminipage
+\end{frame}
+
+
+\begin{frame}{Speed up the compilation cycle}
+  \begin{itemize}
+    \item Add to the preamble:\\
+      \texttt{\textbackslash includeonlyframes\{current\}}\\
+    \item And to the frame you are working on:\\
+      \texttt{[label=current]}\\
+      (from the \texttt{beamer} documentation \S 4.3.3)
+    \item Use \texttt{pdflatex} instead of \texttt{xelatex}
+    \item  Compile in draft mode.
+  \end{itemize}
+\end{frame}

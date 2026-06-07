@@ -1,0 +1,30 @@
+{
+  \renewcommand{\bginsert}{\hfill\raisebox{-0.4\paperheight}{\color{tud LightPurple}%
+    \clap{\hspace*{0.8\paperwidth}\includegraphics[width=2.1\paperwidth]{figures/Library_TUDelft_sunny.jpg}}}\hfill}
+  \section{Matplotlib\\plots}
+}
+
+% Alternatively:
+% https://tikz.org/
+% https://pgfplots.net/multi-series-bar-chart/
+% https://tikz.org/examples/chapter-13-plotting-in-2d-and-3d/
+
+\makeatletter
+\if@fourier
+  \newcommand{\pagenr}{3}
+\else
+  \newcommand{\pagenr}{1}
+\fi
+\makeatother
+
+\begin{frame}{A bar chart}
+  \includegraphics[page=\pagenr]{graphs/plt-bar-penguins.pdf}
+\end{frame}
+
+\begin{frame}{A pie chart}
+  \includegraphics[page=\pagenr]{graphs/plt-pie-chart.pdf}
+\end{frame}
+
+\begin{frame}{Confidence intervals}
+  \includegraphics[page=\pagenr]{graphs/plt-confidence-bands.pdf}
+\end{frame}

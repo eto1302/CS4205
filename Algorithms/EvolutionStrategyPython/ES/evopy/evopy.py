@@ -23,8 +23,9 @@ class EvoPy:
                  strategy=Strategy.SINGLE_VARIANCE, random_seed=None, reporter=None,
                  target_fitness_value=None, target_tolerance=1e-5, max_run_time=None,
                  max_evaluations=None, bounds=None, selection_scheme="plus",
-                 init_sigma_scale=0.3, init="lhs", local_search="none", local_search_k=10,
-                 local_search_final_budget=None):
+                 init_sigma_scale=0.3, init="lhs", archive_mode="off",
+                 archive_size=5, stagnation_generations=20, repair="random",  # WP3: repair mode, default "random" = original behaviour
+                 local_search="none", local_search_k=10, local_search_final_budget=None):            # WP5: gradient local-search hybrid
         """Initializes an EvoPy instance.
 
         :param fitness_function: the fitness function on which the individuals are evaluated
@@ -47,11 +48,34 @@ class EvoPy:
         :param bounds: bounds for the sampling the parameters of individuals
         :param selection_scheme: "plus" for (mu+lambda) or "comma" for (mu,lambda)
         :param init_sigma_scale: initial step size as a fraction of the bounds range
+        :param repair: constraint-repair mode applied after every mutation step.
+               ``"random"`` (default) resamples out-of-bounds alleles uniformly —
+               identical to the original behaviour, so omitting this kwarg is a
+               strict no-op.  ``"clip"`` clamps to the nearest boundary.
+               ``"reflect"`` folds via a tent-map, preserving step magnitude.
+               Threaded from here down to every Individual and their offspring.
         :param local_search: "none" (default), "final" (one L-BFGS-B polish after the loop),
                              or "interleaved" (polish best every local_search_k generations)
         :param local_search_k: interval in generations for "interleaved" local search
         :param local_search_final_budget: evaluations reserved for the final L-BFGS-B call;
                                           defaults to max_evaluations // 10 when None
+        :param archive_mode: elitist-archive behaviour (WP2 §4.1):
+                             "off"            — no archive (return the final
+                                                population best, original behaviour);
+                             "bookkeeping"    — maintain a top-K side store of the
+                                                best individuals ever seen; it does
+                                                NOT affect the search, only the
+                                                returned/reported best (gives a
+                                                monotone "best so far" trace and
+                                                "never lose the best");
+                             "reintroduction" — bookkeeping PLUS reinjecting the
+                                                archived elites into the population
+                                                on stagnation (backup population /
+                                                diversity preservation).
+        :param archive_size: K, the number of elites the archive retains
+        :param stagnation_generations: for "reintroduction", the number of
+                             consecutive generations without archive-best
+                             improvement that triggers a reintroduction
         """
         self.fitness_function = fitness_function
         self.individual_length = individual_length
@@ -71,17 +95,26 @@ class EvoPy:
         self.max_run_time = max_run_time
         self.max_evaluations = max_evaluations
         self.bounds = bounds
+        self.repair = repair #WP3 improvement
         self.selection_scheme = selection_scheme
         self.init_sigma_scale = init_sigma_scale
         self.init = init
         self.local_search = local_search
         self.local_search_k = local_search_k
         self.local_search_final_budget = local_search_final_budget
+        self.archive_mode = archive_mode
+        self.archive_size = archive_size
+        self.stagnation_generations = stagnation_generations
         self.evaluations = 0
         self._ea_max_evals = None   # set in run(); EA stops here, leaving room for polish
         self._polish_maxfun = None  # set in run(); budget handed to L-BFGS-B
         # Population-level sigma for the 1/5 rule variant (set in run()).
         self._sigma_1_5 = None
+                # Elitist archive (WP2 §4.1): top-K best-ever individuals + stagnation
+        # tracking for the "reintroduction" mode. Empty/unused when mode == "off".
+        self.archive = []
+        self._best_archive_fitness = None
+        self._stagnation_counter = 0
 
     def _check_early_stop(self, start_time, best):
         """Check whether the algorithm can stop early, based on time and fitness target.
@@ -98,6 +131,43 @@ class EvoPy:
                 and abs(best.fitness - self.target_fitness_value) < self.target_tolerance) \
                or (ea_cap is not None
                 and self.evaluations >= ea_cap)
+
+    def _is_better(self, fitness_a, fitness_b):
+        """Whether fitness_a is strictly better than fitness_b under the goal."""
+        return fitness_a > fitness_b if self.maximize else fitness_a < fitness_b
+
+    def _update_archive(self, candidates):
+        """Merge ``candidates`` into the top-K elitist archive (best-ever store).
+
+        Stores independent clones so a later population update can't mutate an
+        archived genotype. No fitness re-evaluation happens here.
+        """
+        self.archive.extend(ind.clone() for ind in candidates)
+        self.archive.sort(reverse=self.maximize, key=lambda ind: ind.fitness)
+        del self.archive[self.archive_size:]
+
+    def _maybe_reintroduce(self, population):
+        """Reintroduction mode: on stagnation, inject the archived elites back
+        into ``population`` (replacing its worst members), restoring good genetic
+        material the (mu,lambda) update may have dropped. Mutates ``population``
+        in place. Returns whether a reintroduction happened (for diagnostics)."""
+        archive_best = self.archive[0].fitness
+        if self._best_archive_fitness is None or \
+                self._is_better(archive_best, self._best_archive_fitness):
+            self._best_archive_fitness = archive_best
+            self._stagnation_counter = 0
+            return False
+
+        self._stagnation_counter += 1
+        if self._stagnation_counter < self.stagnation_generations:
+            return False
+
+        # Stagnated: overwrite the worst k members with fresh archive clones.
+        population.sort(reverse=self.maximize, key=lambda ind: ind.fitness)
+        k = min(len(self.archive), len(population))
+        population[len(population) - k:] = [ind.clone() for ind in self.archive[:k]]
+        self._stagnation_counter = 0
+        return True
 
     def run(self):
         """Run the evolutionary strategy algorithm.
@@ -128,6 +198,11 @@ class EvoPy:
         self.evaluations += len(population)
         population.sort(reverse=self.maximize, key=lambda ind: ind.fitness)
         best = population[0]
+
+        archive_on = self.archive_mode != "off"
+        if archive_on:
+            self._update_archive(population)
+            best = self.archive[0]
 
         use_1_5_rule = self.strategy == Strategy.SINGLE_VARIANCE_1_5
         if use_1_5_rule:
@@ -173,6 +248,15 @@ class EvoPy:
             population = sorted(pool, reverse=self.maximize, key=lambda ind: ind.fitness)
             population = population[:self.population_size]
             best = population[0]
+
+            # Elitist archive (WP2 §4.1). Bookkeeping only changes the
+            # reported/returned best (never the search); reintroduction also
+            # reinjects elites into the population on stagnation.
+            if archive_on:
+                self._update_archive(population)
+                if self.archive_mode == "reintroduction":
+                    self._maybe_reintroduce(population)
+                best = self.archive[0]
 
             if self.reporter is not None:
                 mean = np.mean([x.fitness for x in population])
@@ -265,6 +349,7 @@ class EvoPy:
                 list(strategy_parameters),  # one independent copy per individual
                 random_seed=self.random,
                 bounds=self.bounds,
+                repair = self.repair #WP3: Thread repair mode to every individual
             ) for parameters in population_parameters
         ]
 

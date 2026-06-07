@@ -45,7 +45,85 @@ def circles_in_a_square(individual):
                               + math.pow((individual[i + 1] - individual[j + 1]), 2)))
     return min(distances)
 
+def draw_contact_spokes(ax, points_scaled, radius, tol=1e-6):
+    """
+    Draw Packomania-style contact spokes:
+    one radius from the circle center to every contact point.
+    """
+    if tol is None:
+        tol = radius * 1e-3
 
+    n = len(points_scaled)
+
+    for i in range(n):
+        x, y = points_scaled[i]
+
+        # -------------------------
+        # Circle-circle contacts
+        # -------------------------
+        for j in range(n):
+            if i == j:
+                continue
+
+            dx = points_scaled[j, 0] - x
+            dy = points_scaled[j, 1] - y
+
+            d = np.hypot(dx, dy)
+
+            if abs(d - 2 * radius) <= tol:
+                ux = dx / d
+                uy = dy / d
+
+                # spoke from center to circumference
+                ax.plot(
+                    [x, x + radius/2 * ux],
+                    [y, y + radius/2 * uy],
+                    color="darkblue",
+                    lw=1,
+                    zorder=5,
+                )
+
+        # -------------------------
+        # Wall contacts
+        # -------------------------
+        if abs(x - radius) <= tol:
+            ax.plot(
+                [x, x - radius/2],
+                [y, y],
+                color="darkblue",
+                lw=1,
+                zorder=5,
+            )
+
+        if abs(x - (1 - radius)) <= tol:
+            ax.plot(
+                [x, x + radius/2],
+                [y, y],
+                color="darkblue",
+                lw=1,
+                zorder=5,
+            )
+
+        if abs(y - radius) <= tol:
+            ax.plot(
+                [x, x],
+                [y, y - radius/2],
+                color="darkblue",
+                lw=1,
+                zorder=5,
+            )
+
+        if abs(y - (1 - radius)) <= tol:
+            ax.plot(
+                [x, x],
+                [y, y + radius/2],
+                color="darkblue",
+                lw=1,
+                zorder=5,
+            )
+
+        # center marker
+        ax.plot(x, y, "wo", ms=2, mec="darkblue", mew=0.5, zorder=6)
 class CirclesInASquare:
     def __init__(self, n_circles, output_statistics=True, plot_sols=False, print_sols=False):
         self.print_sols = print_sols
@@ -127,20 +205,50 @@ class CirclesInASquare:
 
         return values_to_reach[self.n_circles - 2]
 
-    def run_evolution_strategies(self):
+    # def run_evolution_strategies(self, seed=None, repair="random"):
+    #     callback = self.statistics_callback if self.output_statistics else None
+
+    #     evopy = EvoPy(
+    #         circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,  # Fitness function
+    #         self.n_circles * 2,  # Number of parameters
+    #         reporter=callback,  # Prints statistics at each generation
+    #         maximize=True,
+    #         generations=1000,
+    #         bounds=(0, 1),
+    #         target_fitness_value=self.get_target(),
+    #         max_evaluations=1e5,
+    #         strategy=Strategy.SINGLE_VARIANCE,  # matches the OFAT baseline B
+    #         num_children=7,  # lambda/mu = 210/30 = 7 (BSw95 ratio); matches benchmark.py
+    #         random_seed=seed,
+    #         repair=repair,
+    #     )
+
+    #     best_solution = evopy.run()
+
+    #     if self.plot_best_sol:
+    #         plt.close()
+
+    #     return best_solution
+    
+    def run_evolution_strategies(self, seed=None, repair="random"):
         callback = self.statistics_callback if self.output_statistics else None
 
         evopy = EvoPy(
-            circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,  # Fitness function
-            self.n_circles * 2,  # Number of parameters
-            reporter=callback,  # Prints statistics at each generation
+            circles_in_a_square if self.n_circles < 12 else circles_in_a_square_scipy,
+            self.n_circles * 2,
+            reporter=callback,
             maximize=True,
             generations=1000,
+            population_size=30,
+            num_children=7,           # lambda/mu = 210/30 = 7, matches benchmark
             bounds=(0, 1),
             target_fitness_value=self.get_target(),
             max_evaluations=1e5,
-            strategy=Strategy.FULL_VARIANCE,
-            num_children=7  # lambda/mu = 210/30 = 7 (BSw95 ratio); matches benchmark.py
+            strategy=Strategy.SINGLE_VARIANCE,
+            selection_scheme="comma", # matches benchmark
+            init="lhs",               # matches benchmark
+            random_seed=seed,
+            repair=repair,
         )
 
         best_solution = evopy.run()
@@ -149,9 +257,63 @@ class CirclesInASquare:
             plt.close()
 
         return best_solution
+    
+
+    
+    def plot_final_packing(self, genotype, save_path=None):
+            fitness_fn = circles_in_a_square_scipy if self.n_circles >= 12 else circles_in_a_square
+            fitness = fitness_fn(genotype)
+            points = np.reshape(genotype, (-1, 2))
+            max_radius = fitness / (2 + 2 * fitness)
+            scale = 1.0 - 2 * max_radius
+            points_scaled = points * scale + max_radius
+
+            fig, ax = plt.subplots(figsize=(6, 6))
+            ax.set_aspect("equal")
+            ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+
+            for i, (x, y) in enumerate(points_scaled):
+                ax.add_patch(Circle((x, y), max_radius,
+                                    edgecolor="black", facecolor="steelblue", alpha=0.4))
+                ax.plot(x, y, "k.", markersize=4)
+                ax.text(x, y, str(i + 1), ha="center", va="center",
+                        fontsize=8, fontweight="bold")
+            
+            draw_contact_spokes(ax, points_scaled, max_radius)
+
+            optimum = self.get_target()
+            gap = (optimum - fitness) / optimum * 100
+            ax.set_title(
+                f"Best packing — n={self.n_circles} circles\n"
+                f"fitness={fitness:.6f}  |  optimum={optimum:.6f}  |  gap={gap:.4f}%",
+                fontsize=10
+            )
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            plt.tight_layout()
+
+            if save_path:
+                plt.savefig(save_path, dpi=150, bbox_inches="tight")
+                plt.close(fig)
+            else:
+                plt.show()
+
 
 
 if __name__ == "__main__":
-    circles = 10
-    runner = CirclesInASquare(circles, plot_sols=True, output_statistics=True)
-    best = runner.run_evolution_strategies()
+    ### WP3 Results ###################################################################
+    # # Clip — best seed is 0
+    runner_clip = CirclesInASquare(15, output_statistics=False)
+    best_clip = runner_clip.run_evolution_strategies(seed=0, repair="clip")
+    runner_clip.plot_final_packing(best_clip, save_path="best_packing_n15_clip_seed0.png")
+
+    # # Reflect — best seed is 7
+    runner_reflect = CirclesInASquare(15, output_statistics=False)
+    best_reflect = runner_reflect.run_evolution_strategies(seed=7, repair="reflect")
+    runner_reflect.plot_final_packing(best_reflect, save_path="best_packing_n15_reflect_seed7.png")
+
+    #Random — best seed is 7
+    runner_reflect = CirclesInASquare(15, output_statistics=False)
+    best_reflect = runner_reflect.run_evolution_strategies(seed=17, repair="random")
+    runner_reflect.plot_final_packing(best_reflect, save_path="best_packing_n15_random_seed17.png")
