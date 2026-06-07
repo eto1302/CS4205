@@ -1,0 +1,25 @@
+# LaTeX / latexmk / biber build artifacts (regenerable — do not commit)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.lof
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.idx
+*.ind
+*.ilg
+*.dvi
+
+# Compiled deck: NOT ignored (kept so teammates without LaTeX can view it).
+# Uncomment the next line if you'd rather keep main.pdf out of the repo.
+# main.pdf

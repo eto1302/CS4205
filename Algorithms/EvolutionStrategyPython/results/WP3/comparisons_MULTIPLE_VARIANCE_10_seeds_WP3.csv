@@ -1,0 +1,25 @@
+treatment,wp,n_circles,metric,n_base,n_arm,base_median,arm_median,effect,ci_lo,ci_hi,a12,p_value,marker,note
+B-no_lhs,WP1,7,final_gap,10,10,0.053149,0.038161,0.014988,-0.018648,0.07088,0.64,3.07e-01,ns,
+B-no_lhs,WP1,7,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-no_lhs,WP1,10,final_gap,10,10,0.14279,0.134494,0.008296,-0.024453,0.051818,0.59,5.21e-01,ns,
+B-no_lhs,WP1,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-no_lhs,WP1,15,final_gap,10,10,0.301871,0.305834,-0.003962,-0.039725,0.066305,0.59,5.21e-01,ns,
+B-no_lhs,WP1,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-no_lhs,WP1,20,final_gap,10,10,0.371201,0.400717,-0.029516,-0.171357,0.073943,0.42,5.71e-01,ns,
+B-no_lhs,WP1,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-repair_clip,WP3,7,final_gap,10,10,0.053149,0.033035,0.020114,0.003647,0.077875,0.84,1.13e-02,*,
+B-repair_clip,WP3,7,evals_to_1e-02,0,1,,,,,,,,,insufficient data (few runs reached target)
+B-repair_clip,WP3,10,final_gap,10,10,0.14279,0.094791,0.047999,0.004729,0.075639,0.77,4.52e-02,*,
+B-repair_clip,WP3,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-repair_clip,WP3,15,final_gap,10,10,0.301871,0.211206,0.090665,0.055717,0.136056,0.94,1.01e-03,**,
+B-repair_clip,WP3,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-repair_clip,WP3,20,final_gap,10,10,0.371201,0.235471,0.135731,0.078514,0.210414,0.94,1.01e-03,**,
+B-repair_clip,WP3,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-repair_reflect,WP3,7,final_gap,10,10,0.053149,0.031668,0.021481,-0.001819,0.080888,0.79,3.12e-02,*,
+B-repair_reflect,WP3,7,evals_to_1e-02,0,3,,,,,,,,,insufficient data (few runs reached target)
+B-repair_reflect,WP3,10,final_gap,10,10,0.14279,0.09202,0.05077,-0.022485,0.079356,0.7,1.40e-01,ns,
+B-repair_reflect,WP3,10,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-repair_reflect,WP3,15,final_gap,10,10,0.301871,0.201115,0.100757,0.05544,0.1505,0.95,7.69e-04,***,
+B-repair_reflect,WP3,15,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
+B-repair_reflect,WP3,20,final_gap,10,10,0.371201,0.314164,0.057037,-0.005559,0.135096,0.76,5.39e-02,ns,
+B-repair_reflect,WP3,20,evals_to_1e-02,0,0,,,,,,,,,insufficient data (few runs reached target)
